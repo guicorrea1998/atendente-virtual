@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel do Atendente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EEF0F3; --surface:#FFFFFF; --surface-2:#F6F7F9; --line:#DADDE3;
+  --ink:#14171C; --muted:#5D6470; --accent:#C8641E; --accent-soft:#F7E6D8;
+  --bubble-in:#FFFFFF; --bubble-out:#E9EEF8; --bubble-human:#DDF1E6; --screen:#F1EEE8;
+  --ok:#1F7A4D; --ok-soft:#DDF1E6; --warn:#9A5B00; --warn-soft:#FBEFD9; --dang:#B3261E; --dang-soft:#F9E0DE;
+  --display:"Sora","Segoe UI",system-ui,sans-serif; --body:"Inter","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace; --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101318; --surface:#181C23; --surface-2:#1F242C; --line:#2C323C;
+  --ink:#ECEEF2; --muted:#9BA3AF; --accent:#EE8A44; --accent-soft:#3A2717;
+  --bubble-in:#232831; --bubble-out:#24344F; --bubble-human:#173326; --screen:#14181E;
+  --ok:#5CC48E; --ok-soft:#173326; --warn:#F0B04F; --warn-soft:#382A12; --dang:#F2766C; --dang-soft:#3A1A18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101318; --surface:#181C23; --surface-2:#1F242C; --line:#2C323C;
+  --ink:#ECEEF2; --muted:#9BA3AF; --accent:#EE8A44; --accent-soft:#3A2717;
+  --bubble-in:#232831; --bubble-out:#24344F; --bubble-human:#173326; --screen:#14181E;
+  --ok:#5CC48E; --ok-soft:#173326; --warn:#F0B04F; --warn-soft:#382A12; --dang:#F2766C; --dang-soft:#3A1A18; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{background:var(--bg);margin:0}
+body{color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
+  padding:16px max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(20px,3vw,26px)} h2{font-size:16px} h3{font-size:14px}
+.muted{color:var(--muted)} .small{font-size:12px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px;min-width:0}
+label.f{display:grid;gap:4px} label.f > span{font-size:12px;font-weight:600;color:var(--muted)}
+input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],input[type=time],textarea,select{
+  width:100%;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+textarea{resize:vertical;min-height:70px}
+textarea.mono{font-family:var(--mono);font-size:12px;min-height:170px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:12px;color:var(--muted);margin:0}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:9px 14px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.danger{color:var(--dang)}
+button:disabled{opacity:.55;cursor:default}
+.linkbtn{background:none;border:none;color:var(--accent);padding:0;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.hidden{display:none !important}
+
+/* Topo */
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.top .who{display:grid;gap:2px}
+.modo{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+.modo button{border:none;border-radius:999px;padding:6px 12px;background:none;font-size:13px}
+.modo button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600}
+.modo button[data-modo="desligado"][aria-pressed="true"]{background:var(--muted)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.tabs button{border:none;border-bottom:2px solid transparent;border-radius:0;background:none;padding:10px 12px;white-space:nowrap;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tabs .adm{color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.badge.ok{background:var(--ok-soft);color:var(--ok)} .badge.warn{background:var(--warn-soft);color:var(--warn)} .badge.dang{background:var(--dang-soft);color:var(--dang)}
+.badge.acc{background:var(--accent-soft);color:var(--accent)}
+.banner{border-radius:10px;padding:10px 12px;background:var(--warn-soft);color:var(--warn);font-size:13px}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+
+/* Login */
+.login{max-width:380px;margin:8vh auto 0}
+
+/* Conversas */
+.inbox{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.inbox{grid-template-columns:minmax(0,1fr)} .inbox.aberta .lista{display:none} .inbox:not(.aberta) .thread{display:none}}
+.lista{padding:6px;gap:2px;max-height:75vh;overflow:auto}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 8px;text-align:left;border:none;background:none;border-radius:10px;padding:10px}
+.item:hover,.item[aria-current="true"]{background:var(--surface-2)}
+.item b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .prev{grid-column:1/-1;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .tags{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}
+.unread{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:0 7px;min-width:20px;text-align:center}
+.thread{display:grid;gap:12px}
+.msgs{background:var(--screen);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}
+.b{max-width:82%;padding:7px 10px;border-radius:12px;white-space:pre-wrap;word-wrap:break-word;font-size:14px}
+.b small{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.b.cliente{background:var(--bubble-in);align-self:flex-start;border-top-left-radius:4px}
+.b.atendente{background:var(--bubble-out);align-self:flex-end;border-top-right-radius:4px}
+.b.humano{background:var(--bubble-human);align-self:flex-end;border-top-right-radius:4px}
+.b.sys{align-self:center;background:none;color:var(--muted);font-size:12px;text-align:center}
+.lead{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.lead dt{color:var(--muted)} .lead dd{margin:0}
+.compose{display:flex;gap:8px} .compose textarea{min-height:44px;height:44px}
+
+/* Meu negócio */
+.grade{display:grid;gap:6px}
+.dia{display:grid;grid-template-columns:96px auto minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center}
+.dia label{display:flex;gap:6px;align-items:center;font-size:13px}
+@media (max-width:480px){.dia{grid-template-columns:62px auto minmax(0,1fr) minmax(0,1fr);gap:6px}.dia .txt{display:none}.dia input[type=time]{padding:8px 4px;font-size:13px}}
+.savebar{position:sticky;bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+
+/* Histórico */
+.hist{display:grid;gap:10px}
+.mud{display:grid;gap:4px;font-size:13px;border-left:3px solid var(--line);padding-left:10px}
+.mud del{color:var(--dang);text-decoration:line-through;white-space:pre-wrap}
+.mud ins{color:var(--ok);text-decoration:none;white-space:pre-wrap}
+
+/* Tabela uso */
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;z-index:9;max-width:calc(100vw - 32px)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Login -->
+  <section id="tela-login" class="panel login hidden">
+    <div><div class="tag">Atendente Virtual</div><h1>Entrar no painel</h1></div>
+    <label class="f"><span>E-mail</span><input id="l-email" type="email" autocomplete="username"></label>
+    <label class="f"><span>Senha</span><input id="l-senha" type="password" autocomplete="current-password"></label>
+    <p id="l-erro" class="hint" style="color:var(--dang)"></p>
+    <button id="l-entrar" class="primary">Entrar</button>
+    <button id="l-esqueci" class="linkbtn">Esqueci minha senha</button>
+  </section>
+
+  <!-- App -->
+  <section id="tela-app" class="hidden" style="display:grid;gap:16px">
+    <header class="top">
+      <div class="who">
+        <div class="tag" id="t-tag">Atendente Virtual</div>
+        <div class="row"><h1 id="t-nome">…</h1><select id="t-cliente" class="hidden" style="width:auto"></select></div>
+      </div>
+      <div class="row">
+        <div class="modo" role="group" aria-label="Como o atendente funciona">
+          <button data-modo="sempre" aria-pressed="false" title="Responde todas as mensagens">Sempre</button>
+          <button data-modo="plantao" aria-pressed="false" title="Responde só fora do horário de atendimento">Plantão</button>
+          <button data-modo="desligado" aria-pressed="false" title="Não responde ninguém">Desligado</button>
+        </div>
+        <button id="t-sair" class="linkbtn">Sair</button>
+      </div>
+    </header>
+    <div id="t-demo" class="banner hidden">Modo demonstração: dados de exemplo, nada é enviado de verdade.</div>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="conversas">Conversas</button>
+      <button role="tab" data-tab="negocio">Meu negócio</button>
+      <button role="tab" data-tab="testar">Testar</button>
+      <button role="tab" data-tab="historico">Histórico</button>
+      <button role="tab" data-tab="regras" class="adm so-admin">Regras</button>
+      <button role="tab" data-tab="conexao" class="adm so-admin">Conexão e uso</button>
+      <button role="tab" data-tab="clientes" class="adm so-admin">Clientes</button>
+    </nav>
+
+    <!-- Conversas -->
+    <section data-pane="conversas" class="inbox">
+      <div class="panel lista" id="c-lista"></div>
+      <div class="thread" id="c-thread"></div>
+    </section>
+
+    <!-- Meu negócio -->
+    <section data-pane="negocio" style="display:grid;gap:16px">
+      <div class="grid2">
+        <div class="panel">
+          <h2>Seu negócio</h2>
+          <label class="f"><span>Nome que o atendente usa</span><input id="f-loja" type="text"></label>
+          <label class="f"><span>Cidade</span><input id="f-cidade" type="text"></label>
+          <label class="f"><span>Quem atende (nome)</span><input id="f-vendedor" type="text"></label>
+          <label class="f"><span>WhatsApp de quem atende (recebe o aviso de cliente pronto)</span><input id="f-vendedorFone" type="tel" placeholder="(18) 99999-0000"></label>
+        </div>
+        <div class="panel">
+          <h2>Horário de atendimento</h2>
+          <p class="hint">No modo Plantão, o atendente só responde fora destes horários.</p>
+          <div class="grade" id="f-grade"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Produtos e preços</h2>
+        <p id="f-estoque-aviso" class="banner ok hidden">Os aparelhos em estoque entram sozinhos, direto do seu app de estoque, com o preço de venda cadastrado. Aqui ficam só os itens extras (acessórios, serviços).</p>
+        <label class="f"><span>Um por linha: item | preço</span><textarea id="f-catalogo" class="mono"></textarea></label>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h2>Pagamento</h2>
+          <label class="f"><span>Formas de pagamento e parcelamento</span><textarea id="f-pagamento"></textarea></label>
+          <label class="f"><span>Entrega, retirada ou agendamento</span><textarea id="f-atendimento"></textarea></label>
+        </div>
+        <div class="panel">
+          <h2>Promoções e avisos</h2>
+          <label class="f"><span>Promoções em vigor</span><textarea id="f-promocoes" placeholder="Ex.: película grátis na compra de qualquer iPhone até 30/11"></textarea></label>
+          <label class="f"><span>Outras informações</span><textarea id="f-extras"></textarea></label>
+        </div>
+      </div>
+      <div class="savebar">
+        <span id="f-status" class="small muted">Sem alterações</span>
+        <div class="row">
+          <button id="f-desfazer">Descartar</button>
+          <button id="f-testar">Testar</button>
+          <button id="f-salvar" class="primary">Salvar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testar -->
+    <section data-pane="testar" class="grid2" style="align-items:start">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Teste como se fosse um cliente</h2><button id="s-limpar" class="linkbtn">Recomeçar</button></div>
+        <p class="hint" id="s-qual">Usa as informações da aba Meu negócio, mesmo as que ainda não foram salvas.</p>
+        <div class="row small"><span class="muted">Simular:</span>
+          <label><input type="radio" name="s-hora" value="fechado" checked> loja fechada</label>
+          <label><input type="radio" name="s-hora" value="aberto"> loja aberta</label></div>
+        <div class="msgs" id="s-msgs" style="min-height:280px"></div>
+        <div class="compose"><textarea id="s-msg" placeholder="Escreva como cliente…"></textarea><button id="s-enviar" class="primary">Enviar</button></div>
+      </div>
+      <div class="panel">
+        <h2>O que o atendente anotou</h2>
+        <dl class="lead" id="s-lead"></dl>
+        <p class="hint">Quando o atendente marca "passar para você", a conversa real aparece como Encaminhada e você recebe o aviso no WhatsApp.</p>
+      </div>
+    </section>
+
+    <!-- Histórico -->
+    <section data-pane="historico" class="panel">
+      <h2>Histórico de alterações</h2>
+      <div class="hist" id="h-lista"></div>
+    </section>
+
+    <!-- Regras (admin) -->
+    <section data-pane="regras" class="panel">
+      <div class="row" style="justify-content:space-between"><h2>Regras do atendente</h2>
+        <div class="row"><select id="r-seg" style="width:auto"></select><button id="r-modelo">Carregar modelo</button></div></div>
+      <p class="hint">Só você vê e edita. O cliente nunca muda estas regras.</p>
+      <div class="grid2">
+        <label class="f"><span>Tipo de negócio (como o atendente se apresenta)</span><input id="r-descricao" type="text"></label>
+        <label class="f"><span>Objetivo</span><input id="r-objetivo" type="text"></label>
+      </div>
+      <label class="f"><span>Tom de voz</span><textarea id="r-tom"></textarea></label>
+      <label class="f"><span>O que descobrir do cliente</span><textarea id="r-coletar"></textarea></label>
+      <label class="f"><span>Quando passar para o responsável</span><textarea id="r-passar"></textarea></label>
+      <label class="f"><span>Políticas (garantia, troca, cancelamento)</span><textarea id="r-politicas"></textarea></label>
+      <label class="f"><span>Campos do lead (um por linha: chave | Rótulo)</span><textarea id="r-campos" class="mono" style="min-height:80px"></textarea></label>
+      <label class="f"><span>Regra extra de segurança (opcional)</span><textarea id="r-extrasAdmin"></textarea></label>
+      <div class="row"><button id="r-testar">Testar com estas regras</button><button id="r-salvar" class="primary">Salvar regras</button></div>
+    </section>
+
+    <!-- Conexão e uso (admin) -->
+    <section data-pane="conexao" style="display:grid;gap:16px">
+      <div class="grid2">
+        <div class="panel">
+          <h2>Conexão</h2>
+          <label class="f"><span>Nome do cliente</span><input id="x-nome" type="text"></label>
+          <label class="f"><span>Phone number ID (WhatsApp Cloud API)</span><input id="x-phone" type="text" inputmode="numeric"></label>
+          <label class="f"><span>Limite de conversas por mês (0 = sem limite)</span><input id="x-limite" type="number" min="0"></label>
+          <label class="row"><input id="x-ativo" type="checkbox"> Cliente ativo</label>
+          <button id="x-salvar" class="primary">Salvar conexão</button>
+          <hr style="border:none;border-top:1px solid var(--line);width:100%">
+          <label class="f"><span>Token do WhatsApp (fica guardado só no servidor; o campo não mostra o atual)</span><input id="x-token" type="password" autocomplete="off"></label>
+          <button id="x-token-salvar">Gravar token</button>
+        </div>
+        <div class="panel">
+          <h2>Estoque integrado (loja de celular)</h2>
+          <p class="hint">Liga o atendente ao app de estoque. Ele lê só nome, status e preço de venda; nunca o custo.</p>
+          <label class="f"><span>Projeto Firebase do app</span><input id="x-est-proj" type="text" placeholder="sistema-importadora-sants"></label>
+          <label class="f"><span>UID do dono no app</span><input id="x-est-uid" type="text"></label>
+          <button id="x-est-salvar">Salvar estoque</button>
+          <hr style="border:none;border-top:1px solid var(--line);width:100%">
+          <h2>Acessos ao painel</h2>
+          <div id="x-membros" class="small muted"></div>
+          <div class="grid2"><input id="x-novo-email" type="email" placeholder="e-mail do cliente"><input id="x-novo-senha" type="text" placeholder="senha inicial (mín. 6)"></div>
+          <button id="x-novo">Criar acesso</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Uso e custo estimado</h2>
+          <label class="row small">US$ 1 = R$ <input id="x-cotacao" type="number" step="0.01" style="width:80px"></label></div>
+        <div class="tablewrap"><table id="x-uso"></table></div>
+        <p class="hint">Estimativa máxima pelo preço do Claude Haiku 4.5 (US$ 1 por milhão de tokens de entrada, US$ 5 de saída). O cache deixa o custo real menor.</p>
+      </div>
+    </section>
+
+    <!-- Clientes (admin) -->
+    <section data-pane="clientes" style="display:grid;gap:16px">
+      <div class="panel">
+        <h2>Clientes</h2>
+        <div class="tablewrap"><table id="k-lista"></table></div>
+      </div>
+      <div class="panel">
+        <h2>Novo cliente</h2>
+        <div class="grid2">
+          <label class="f"><span>Nome</span><input id="k-nome" type="text"></label>
+          <label class="f"><span>Segmento (preenche um modelo para começar)</span><select id="k-seg"></select></label>
+        </div>
+        <button id="k-criar" class="primary" style="justify-self:start">Criar cliente</button>
+      </div>
+    </section>
+  </section>
+</div>
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script type="module">
+/* ═══════════ Configuração (preencha depois de criar o Firebase e implantar o motor) ═══════════ */
+const CONFIG = {
+  firebase: { apiKey: "", authDomain: "", projectId: "", appId: "" },
+  motor: ""   // URL do App da Web do Apps Script (termina em /exec)
+};
+
+const SEGMENTOS = {
+  celular: {
+    rotulo: "Loja de celular", descricao: "loja de iPhones seminovos",
+    loja: "Loja Exemplo iPhones", cidade: "Birigui-SP", horario: "Segunda a sexta das 9h às 18h, sábado das 9h às 13h",
+    catalogo: "iPhone 13 128GB Azul | R$ 2.399\niPhone 13 128GB Meia-noite | R$ 2.399\niPhone 14 128GB Branco | R$ 2.899\niPhone 14 Pro 256GB Roxo-profundo | R$ 3.999\niPhone 15 128GB Rosa | R$ 3.499\niPhone 15 Pro 128GB Azul | R$ 4.299\niPhone 16 Pro Max 256GB Titânio Preto | R$ 6.899",
+    pagamento: "Pix ou dinheiro à vista. Cartão em até 12x (juros da maquininha, o vendedor passa o valor exato).",
+    atendimento: "Entrega grátis em Birigui e região. Também pode retirar na loja.",
+    regras: "90 dias de garantia da loja. Aceitamos o usado como parte do pagamento, com avaliação na loja.",
+    extras: "Todos revisados, bateria acima de 80%. Acompanha capinha e película.", vendedor: "Rafael",
+    objetivo: "Levar o cliente até a compra: entender o aparelho que ele quer e passar para o vendedor fechar.",
+    coletar: "modelo, armazenamento e cor; forma de pagamento (Pix, cartão parcelado ou troca com usado; se troca, qual aparelho); cidade para entrega ou retirada; nome.",
+    passar: "valor exato parcelado, desconto ou negociação, reserva, avaliação de usado, ou quando já souber o interesse e a forma de pagamento.",
+    campos: [["pagamento","Pagamento"],["troca","Troca"],["cidade","Cidade"]],
+    sugestoes: ["Oi, tem iPhone 13?", "Quanto fica o 15 Pro em 12x?", "Aceita meu 11 na troca?", "Faz por 3.200 à vista?"]
+  },
+  estetica: {
+    rotulo: "Clínica de estética", descricao: "clínica de estética",
+    loja: "Espaço Exemplo Estética", cidade: "Araçatuba-SP", horario: "Segunda a sexta das 8h às 19h, sábado das 8h às 12h",
+    catalogo: "Limpeza de pele | R$ 150\nDrenagem linfática (sessão) | R$ 120\nPeeling químico | R$ 200\nDepilação a laser axila (sessão) | R$ 90\nToxina botulínica | a partir de R$ 800, só após avaliação\nAvaliação | gratuita",
+    pagamento: "Pix, dinheiro ou cartão. Pacotes em até 6x sem juros.",
+    atendimento: "Atendimento com hora marcada, na clínica.",
+    regras: "Remarcação com 24h de antecedência. Falta sem aviso perde o sinal do pacote.",
+    extras: "Profissionais habilitadas. Estacionamento em frente.", vendedor: "Carla",
+    objetivo: "Agendar uma avaliação ou o procedimento.",
+    coletar: "procedimento de interesse; se é a primeira vez na clínica; melhor dia e período; nome.",
+    passar: "preço de procedimentos que exigem avaliação, dúvidas de saúde ou contraindicação (nunca dê orientação de saúde), confirmação do horário na agenda, ou quando já souber procedimento e período.",
+    campos: [["primeira_vez","Primeira vez"],["preferencia","Dia/período"],["cidade","Cidade"]],
+    sugestoes: ["Quanto custa limpeza de pele?", "Vocês fazem botox?", "Tem horário sábado?", "Sou gestante, posso fazer peeling?"]
+  },
+  odonto: {
+    rotulo: "Clínica odontológica", descricao: "clínica odontológica",
+    loja: "Clínica Exemplo Sorriso", cidade: "Birigui-SP", horario: "Segunda a sexta das 8h às 18h",
+    catalogo: "Avaliação | gratuita\nLimpeza | R$ 180\nClareamento | R$ 900\nRestauração | a partir de R$ 200\nAparelho ortodôntico | após avaliação\nImplante | após avaliação",
+    pagamento: "Pix, cartão em até 10x. Aceitamos os convênios Exemplo Odonto e Sorriso Mais.",
+    atendimento: "Atendimento com hora marcada, na clínica.",
+    regras: "Remarcação com 24h de antecedência.",
+    extras: "Atendemos crianças a partir de 3 anos.", vendedor: "Dra. Paula (recepção)",
+    objetivo: "Agendar a avaliação gratuita.",
+    coletar: "o que a pessoa quer tratar; se tem convênio e qual; melhor dia e período; nome.",
+    passar: "dor forte ou urgência, dúvida de tratamento ou diagnóstico (nunca dê orientação clínica), confirmação de horário, ou quando já souber o tratamento e o período.",
+    campos: [["convenio","Convênio"],["preferencia","Dia/período"],["urgencia","Urgência"]],
+    sugestoes: ["Quanto é o clareamento?", "Aceita convênio?", "Estou com dor de dente", "Tem avaliação para aparelho?"]
+  },
+  salao: {
+    rotulo: "Salão / barbearia", descricao: "salão de beleza e barbearia",
+    loja: "Studio Exemplo", cidade: "Penápolis-SP", horario: "Terça a sábado das 9h às 20h",
+    catalogo: "Corte masculino | R$ 40\nBarba | R$ 30\nCorte + barba | R$ 60\nCorte feminino | R$ 70\nEscova | R$ 50\nColoração | a partir de R$ 150",
+    pagamento: "Pix, dinheiro ou cartão.",
+    atendimento: "Com hora marcada. Profissionais: Léo (barbeiro), Ju (cabelo feminino).",
+    regras: "Atraso de mais de 15 minutos pode precisar remarcar.",
+    extras: "Café e água por conta da casa.", vendedor: "Léo",
+    objetivo: "Agendar o serviço.",
+    coletar: "serviço; profissional de preferência; dia e horário; nome.",
+    passar: "orçamento de coloração ou química, confirmação do horário na agenda, ou quando já souber serviço e horário.",
+    campos: [["profissional","Profissional"],["preferencia","Dia/horário"],["cidade","Cidade"]],
+    sugestoes: ["Tem horário hoje à tarde?", "Quanto é corte e barba?", "Quero fazer luzes", "Abre segunda?"]
+  },
+  petshop: {
+    rotulo: "Pet shop", descricao: "pet shop com banho e tosa",
+    loja: "Pet Exemplo", cidade: "Araçatuba-SP", horario: "Segunda a sábado das 8h às 18h",
+    catalogo: "Banho cão pequeno | R$ 50\nBanho cão médio | R$ 65\nBanho e tosa pequeno | R$ 80\nRação premium adulto 15kg | R$ 189\nAreia gato 4kg | R$ 25\nConsulta veterinária | R$ 120",
+    pagamento: "Pix, dinheiro ou cartão.",
+    atendimento: "Leva e traz do pet grátis no bairro. Entrega de produtos na cidade por R$ 8.",
+    regras: "Cães agressivos precisam de aviso antes.",
+    extras: "Clube do banho: 4 banhos por mês com 15% de desconto.", vendedor: "Bia",
+    objetivo: "Agendar banho e tosa ou vender o produto.",
+    coletar: "serviço ou produto; porte e raça do pet; se quer leva e traz ou entrega; dia e período; nome.",
+    passar: "dúvidas de saúde do animal (nunca dê orientação veterinária), confirmação de horário, ou quando já souber o serviço e o dia.",
+    campos: [["pet","Pet (porte/raça)"],["preferencia","Dia/período"],["entrega","Leva e traz/entrega"]],
+    sugestoes: ["Quanto é banho num shih tzu?", "Tem ração premium?", "Vocês buscam o cachorro?", "Meu gato não come, o que faço?"]
+  },
+  roupas: {
+    rotulo: "Loja de roupas", descricao: "loja de roupas femininas",
+    loja: "Boutique Exemplo", cidade: "Birigui-SP", horario: "Segunda a sexta das 9h às 18h, sábado das 9h às 14h",
+    catalogo: "Vestido midi (P ao GG) | R$ 159\nCalça jeans wide leg (36 ao 46) | R$ 139\nCamiseta básica (P ao GG) | R$ 49\nConjunto fitness (P ao G) | R$ 129\nBlazer alfaiataria (P ao G) | R$ 199",
+    pagamento: "Pix com 5% de desconto. Cartão em até 4x sem juros.",
+    atendimento: "Envio pelos Correios para todo o Brasil. Entrega grátis na cidade acima de R$ 150. Retirada na loja.",
+    regras: "Troca em até 7 dias com etiqueta.",
+    extras: "Novidades toda quinta-feira.", vendedor: "Mari",
+    objetivo: "Vender a peça: entender o que a cliente procura e passar para fechar o pedido.",
+    coletar: "peça; tamanho e cor; entrega ou retirada (se entrega, cidade); nome.",
+    passar: "confirmação de estoque de tamanho/cor, fechamento do pedido e pagamento, ou quando já souber peça, tamanho e entrega.",
+    campos: [["tamanho","Tamanho/cor"],["entrega","Entrega"],["cidade","Cidade"]],
+    sugestoes: ["Tem vestido no M?", "Entrega em outra cidade?", "Quanto fica no Pix?", "Posso trocar se não servir?"]
+  },
+  construcao: {
+    rotulo: "Material de construção", descricao: "loja de material de construção",
+    loja: "Depósito Exemplo", cidade: "Birigui-SP", horario: "Segunda a sexta das 7h às 18h, sábado das 7h às 12h",
+    catalogo: "Cimento CP II 50kg | R$ 39\nAreia média (m³) | R$ 160\nTijolo baiano (milheiro) | R$ 950\nTinta acrílica 18L branca | R$ 289\nPiso cerâmico 60x60 (m²) | R$ 42\nArgamassa AC2 20kg | R$ 24",
+    pagamento: "Pix, boleto para CNPJ cadastrado, cartão em até 6x.",
+    atendimento: "Entrega com caminhão: grátis na cidade acima de R$ 500; outras cidades com frete a combinar.",
+    regras: "Troca de material sem uso em até 7 dias.",
+    extras: "Fazemos orçamento por lista de materiais.", vendedor: "Seu Jorge",
+    objetivo: "Montar o orçamento do cliente e passar para o vendedor fechar.",
+    coletar: "materiais e quantidades; endereço/bairro de entrega; prazo da obra; nome.",
+    passar: "orçamento final com frete, preço para grande quantidade, prazo de entrega, ou quando a lista de materiais estiver completa.",
+    campos: [["itens","Materiais e quantidades"],["entrega","Endereço/bairro"],["prazo","Prazo"]],
+    sugestoes: ["Quanto tá o cimento?", "Preciso de material pra uma laje", "Entrega amanhã?", "Faz preço pra 100 sacos?"]
+  },
+  delivery: {
+    rotulo: "Restaurante / delivery", descricao: "restaurante com delivery",
+    loja: "Cozinha Exemplo", cidade: "Araçatuba-SP", horario: "Todos os dias das 11h às 14h30 e das 18h às 23h",
+    catalogo: "Marmitex (arroz, feijão, carne do dia, salada) | R$ 22\nPizza grande (8 fatias) | R$ 59\nHambúrguer artesanal + fritas | R$ 36\nRefrigerante 2L | R$ 12\nTaxa de entrega | R$ 5",
+    pagamento: "Pix, dinheiro (avise se precisa de troco) ou cartão na entrega.",
+    atendimento: "Entrega em até 50 minutos na cidade. Retirada no balcão.",
+    regras: "Pedido confirmado não pode ser cancelado depois que sai para entrega.",
+    extras: "Cardápio do dia muda a carne da marmita.", vendedor: "Cozinha",
+    objetivo: "Anotar o pedido completo e passar para a cozinha confirmar.",
+    coletar: "itens e quantidades; endereço completo ou retirada; forma de pagamento (e troco); nome.",
+    passar: "quando o pedido estiver completo com endereço e pagamento, ou reclamação de pedido.",
+    campos: [["pedido","Pedido"],["endereco","Endereço"],["pagamento","Pagamento"]],
+    sugestoes: ["Qual a carne de hoje?", "Quero 2 marmitex", "Entrega no bairro Aviação?", "Meu pedido está atrasado"]
+  },
+  imobiliaria: {
+    rotulo: "Imobiliária", descricao: "imobiliária",
+    loja: "Imobiliária Exemplo", cidade: "Birigui-SP", horario: "Segunda a sexta das 8h às 18h, sábado das 8h às 12h",
+    catalogo: "Apartamento 2 dorm., centro (aluguel) | R$ 1.300/mês\nCasa 3 dorm. com quintal, Jd. Exemplo (venda) | R$ 420.000\nTerreno 250 m², bairro novo (venda) | R$ 120.000\nKitnet mobiliada perto da faculdade (aluguel) | R$ 900/mês",
+    pagamento: "Venda: financiamento bancário ou à vista. Aluguel: seguro fiança ou fiador.",
+    atendimento: "Visitas com corretor, agendadas.",
+    regras: "Documentação analisada pela imobiliária antes do contrato.",
+    extras: "Avaliamos seu imóvel para venda sem custo.", vendedor: "Corretor André",
+    objetivo: "Entender o que a pessoa procura e agendar uma visita com o corretor.",
+    coletar: "compra ou aluguel; tipo de imóvel e número de quartos; região; faixa de valor; nome.",
+    passar: "agendamento de visita, negociação de valor, financiamento, ou quando já souber finalidade, tipo e faixa de valor.",
+    campos: [["finalidade","Compra/aluguel"],["faixa","Faixa de valor"],["regiao","Região"]],
+    sugestoes: ["Tem casa pra alugar?", "Quero comprar até 300 mil", "Aceita financiamento?", "Posso visitar sábado?"]
+  },
+  oficina: {
+    rotulo: "Oficina mecânica", descricao: "oficina mecânica",
+    loja: "Auto Center Exemplo", cidade: "Birigui-SP", horario: "Segunda a sexta das 8h às 18h, sábado das 8h às 12h",
+    catalogo: "Troca de óleo + filtro | a partir de R$ 150\nAlinhamento e balanceamento | R$ 120\nRevisão completa | orçamento após avaliação\nPastilhas de freio dianteiras | a partir de R$ 220\nDiagnóstico eletrônico | R$ 80",
+    pagamento: "Pix, dinheiro ou cartão em até 6x.",
+    atendimento: "Com hora marcada. Leva e traz em até 5 km.",
+    regras: "Garantia de 90 dias no serviço.",
+    extras: "Orçamento aprovado pelo cliente antes de qualquer serviço.", vendedor: "Marcos",
+    objetivo: "Agendar o serviço ou a avaliação do carro.",
+    coletar: "carro (modelo e ano); serviço ou problema; dia e período; nome.",
+    passar: "orçamento de conserto, diagnóstico de defeito, confirmação de horário, ou quando já souber carro, serviço e dia.",
+    campos: [["veiculo","Carro"],["preferencia","Dia/período"],["cidade","Cidade"]],
+    sugestoes: ["Quanto é troca de óleo no Onix?", "Meu carro tá fazendo barulho", "Tem horário amanhã?", "Vocês buscam o carro?"]
+  },
+  academia: {
+    rotulo: "Academia", descricao: "academia",
+    loja: "Academia Exemplo", cidade: "Birigui-SP", horario: "Segunda a sexta das 6h às 22h, sábado das 8h às 14h",
+    catalogo: "Plano mensal | R$ 99\nPlano trimestral | R$ 270\nPlano anual | R$ 79/mês\nAula experimental | grátis\nAvaliação física | R$ 50",
+    pagamento: "Pix, cartão recorrente ou boleto.",
+    atendimento: "Musculação, funcional e spinning. Matrícula na recepção.",
+    regras: "Cancelamento do plano mensal sem multa com 30 dias de aviso.",
+    extras: "Estacionamento próprio. Professores em todos os horários.", vendedor: "Recepção",
+    objetivo: "Agendar a aula experimental e levar à matrícula.",
+    coletar: "objetivo do treino; horário em que pretende treinar; se já treinou antes; nome.",
+    passar: "desconto, plano empresa ou família, ou quando a aula experimental tiver dia e horário.",
+    campos: [["objetivo","Objetivo"],["preferencia","Horário de treino"],["plano","Plano de interesse"]],
+    sugestoes: ["Quanto é a mensalidade?", "Tem aula experimental?", "Abre domingo?", "Tem plano casal?"]
+  }
+};
+
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const DIAS = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
+const CAMPOS_FICHA = ["loja","cidade","vendedor","vendedorFone","catalogo","pagamento","atendimento","promocoes","extras"];
+const ROTULOS = { loja:"Nome", cidade:"Cidade", vendedor:"Quem atende", vendedorFone:"WhatsApp de quem atende", catalogo:"Produtos e preços",
+  pagamento:"Pagamento", atendimento:"Entrega/agendamento", promocoes:"Promoções", extras:"Outras informações", grade:"Horário", modo:"Modo do atendente" };
+const NOMES_MODO = { sempre:"Sempre", plantao:"Plantão", desligado:"Desligado" };
+const GRADE_PADRAO = { seg:{abre:"09:00",fecha:"18:00"}, ter:{abre:"09:00",fecha:"18:00"}, qua:{abre:"09:00",fecha:"18:00"},
+  qui:{abre:"09:00",fecha:"18:00"}, sex:{abre:"09:00",fecha:"18:00"}, sab:{abre:"09:00",fecha:"13:00"}, dom:null };
+const TOM_PADRAO = "Escreva como uma pessoa da equipe no WhatsApp: frases curtas (1 a 3), tom simpático e direto, no máximo 1 emoji.";
+
+function toast(t){ const el = $("toast"); el.textContent = t; el.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.add("hidden"), 3200); }
+function quando(iso){ if(!iso) return ""; const d = new Date(iso); const hoje = new Date();
+  return d.toDateString() === hoje.toDateString() ? d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) + " " + d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
+function mesAtual(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); }
+
+function modeloDoSegmento(k){
+  const s = SEGMENTOS[k] || SEGMENTOS.celular;
+  return {
+    ficha: { loja: "", cidade: s.cidade || "", vendedor: "", vendedorFone: "", catalogo: s.catalogo || "", pagamento: s.pagamento || "",
+      atendimento: s.atendimento || "", promocoes: "", extras: s.extras || "", grade: GRADE_PADRAO, modo: "plantao" },
+    config: { segmento: k, descricao: s.descricao, objetivo: s.objetivo, tom: TOM_PADRAO, coletar: s.coletar, passar: s.passar,
+      politicas: s.regras || "", campos: s.campos || [], extrasAdmin: "" }
+  };
+}
+
+/* ═══════════ Camada de dados: Firebase de verdade ou demonstração ═══════════ */
+const DEMO = new URLSearchParams(location.search).has("demo") || !CONFIG.firebase.apiKey;
+let api;
+
+async function apiFirebase(){
+  const V = "10.12.2";
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const A = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const F = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = initializeApp(CONFIG.firebase);
+  const auth = A.getAuth(app), db = F.getFirestore(app);
+  const semId = d => { const o = d.data(); o.id = d.id; return o; };
+  return {
+    onUser: cb => A.onAuthStateChanged(auth, u => cb(u ? { uid: u.uid, email: u.email } : null)),
+    entrar: (e, s) => A.signInWithEmailAndPassword(auth, e, s),
+    sair: () => A.signOut(auth),
+    resetSenha: e => A.sendPasswordResetEmail(auth, e),
+    ehAdmin: async uid => { try { return (await F.getDoc(F.doc(db, "admins", uid))).exists(); } catch(e){ return false; } },
+    ouvirClientes: (uid, admin, cb) => F.onSnapshot(admin ? F.collection(db, "clientes") : F.query(F.collection(db, "clientes"), F.where("membros", "array-contains", uid)),
+      s => cb(s.docs.map(semId)), e => { console.error(e); toast("Sem acesso aos dados."); }),
+    ouvirConversas: (cid, cb) => F.onSnapshot(F.query(F.collection(db, "clientes", cid, "conversas"), F.orderBy("atualizadoEm", "desc"), F.limit(80)), s => cb(s.docs.map(semId))),
+    marcarLida: (cid, n) => F.updateDoc(F.doc(db, "clientes", cid, "conversas", n), { naoLidas: 0 }),
+    salvarFicha: async (cid, ficha, mudancas, user) => {
+      const b = F.writeBatch(db);
+      b.update(F.doc(db, "clientes", cid), { ficha, atualizadoEm: new Date().toISOString() });
+      b.set(F.doc(F.collection(db, "clientes", cid, "historico")), { em: new Date().toISOString(), uid: user.uid, email: user.email || "", mudancas });
+      await b.commit();
+    },
+    salvarAdmin: (cid, campos) => F.updateDoc(F.doc(db, "clientes", cid), campos),
+    criarCliente: async obj => (await F.addDoc(F.collection(db, "clientes"), obj)).id,
+    historico: async cid => (await F.getDocs(F.query(F.collection(db, "clientes", cid, "historico"), F.orderBy("em", "desc"), F.limit(60)))).docs.map(semId),
+    criarAcesso: async (email, senha) => {
+      const sec = initializeApp(CONFIG.firebase, "sec-" + Date.now()); const a2 = A.getAuth(sec);
+      const r = await A.createUserWithEmailAndPassword(a2, email, senha); const uid = r.user.uid; await A.signOut(a2); return uid;
+    },
+    motor: async (acao, dados) => {
+      const idToken = await auth.currentUser.getIdToken();
+      const r = await fetch(CONFIG.motor, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ acao, idToken, ...dados }) });
+      const j = await r.json(); if (j.erro) throw new Error(j.erro); return j;
+    }
+  };
+}
+
+function apiDemo(){
+  const agora = Date.now(), iso = m => new Date(agora - m * 60000).toISOString();
+  const base = modeloDoSegmento("celular");
+  base.ficha = Object.assign(base.ficha, { loja: "Loja Exemplo iPhones", cidade: "Birigui-SP", vendedor: "Rafael", vendedorFone: "(18) 99999-0000",
+    catalogo: "Capinha MagSafe | R$ 89\nPelícula 3D | R$ 49\nCarregador 20W original | R$ 149", promocoes: "Película grátis na compra de qualquer iPhone" });
+  const clientes = [{ id: "demo1", nome: "Loja Exemplo iPhones", ativo: true, phone_number_id: "1234567890", membros: ["demo"], limiteMes: 300,
+    estoque: { projeto: "sistema-importadora-sants", uid: "exemplo" }, ...base,
+    uso: { [mesAtual()]: { conversas: 84, mensagens: 512, respostasIA: 430, tokensEntrada: 1250000, tokensSaida: 61000 } } }];
+  const conversas = { demo1: [
+    { id: "5518911112222", nome: "Maria Souza", numero: "5518911112222", status: "encaminhado", naoLidas: 2, atualizadoEm: iso(4), resumo: "Quer o iPhone 13 azul no Pix, retirada hoje",
+      lead: { nome: "Maria", interesse: "iPhone 13 128GB Azul", pagamento: "Pix", troca: "não", cidade: "Birigui", temperatura: "quente" },
+      mensagens: [{ quem: "cliente", texto: "Oi, tem iPhone 13?", em: iso(12) }, { quem: "atendente", texto: "Oi! Tem sim 😊 Temos o 13 de 128GB Azul por R$ 2.399. Prefere Pix ou cartão?", em: iso(12) },
+        { quem: "cliente", texto: "Pix. Consigo buscar hoje?", em: iso(5) }, { quem: "atendente", texto: "Consegue sim! Vou passar para o Rafael confirmar a retirada com você agora.", em: iso(4) }] },
+    { id: "5518933334444", nome: "João", numero: "5518933334444", status: "atendente", naoLidas: 0, atualizadoEm: iso(58),
+      lead: { interesse: "iPhone 15 Pro", pagamento: "cartão 12x", temperatura: "morno" },
+      mensagens: [{ quem: "cliente", texto: "Quanto fica o 15 pro em 12x?", em: iso(60) }, { quem: "atendente", texto: "O 15 Pro 128GB sai por R$ 4.299. O valor exato no 12x quem passa é o Rafael, já que depende da maquininha. Você tem algum aparelho para dar na troca?", em: iso(58) }] },
+    { id: "5518955556666", nome: "Carla", numero: "5518955556666", status: "humano", naoLidas: 0, atualizadoEm: iso(300),
+      lead: { interesse: "iPhone 14", troca: "iPhone 11", temperatura: "morno" },
+      mensagens: [{ quem: "cliente", texto: "Aceita meu 11 na troca?", em: iso(310) }, { quem: "atendente", texto: "Aceitamos sim! A avaliação é feita na loja. Vou passar para o Rafael.", em: iso(309) }, { quem: "humano", texto: "Oi Carla, aqui é o Rafael. Pode trazer amanhã às 10h?", em: iso(300) }] }
+  ] };
+  const hist = { demo1: [{ id: "h1", em: iso(1440), email: "dono@lojaexemplo.com", mudancas: [{ campo: "promocoes", de: "", para: "Película grátis na compra de qualquer iPhone" }] }] };
+  const ouvintes = { cli: [], conv: {} };
+  const avisa = () => { ouvintes.cli.forEach(f => f(structuredClone(clientes))); Object.entries(ouvintes.conv).forEach(([cid, fs]) => fs.forEach(f => f(structuredClone(conversas[cid] || [])))); };
+  let user = null, onU = () => {};
+  return {
+    onUser: cb => { onU = cb; setTimeout(() => cb(user), 0); },
+    entrar: async (e) => { user = { uid: e.startsWith("admin") ? "gui" : "demo", email: e }; onU(user); },
+    sair: async () => { user = null; onU(null); },
+    resetSenha: async () => {},
+    ehAdmin: async uid => uid === "gui",
+    ouvirClientes: (uid, admin, cb) => { ouvintes.cli.push(cb); cb(structuredClone(clientes.filter(c => admin || c.membros.includes(uid)))); },
+    ouvirConversas: (cid, cb) => { (ouvintes.conv[cid] = ouvintes.conv[cid] || []).push(cb); cb(structuredClone(conversas[cid] || [])); return () => {}; },
+    marcarLida: async (cid, n) => { const c = (conversas[cid] || []).find(x => x.id === n); if(c){ c.naoLidas = 0; avisa(); } },
+    salvarFicha: async (cid, ficha, mudancas, u) => { clientes.find(c => c.id === cid).ficha = ficha; (hist[cid] = hist[cid] || []).unshift({ id: "h" + Date.now(), em: new Date().toISOString(), email: u.email, mudancas }); avisa(); },
+    salvarAdmin: async (cid, campos) => { Object.assign(clientes.find(c => c.id === cid), structuredClone(campos)); avisa(); },
+    criarCliente: async obj => { const id = "demo" + (clientes.length + 1); clientes.push({ id, ...obj }); avisa(); return id; },
+    historico: async cid => structuredClone(hist[cid] || []),
+    criarAcesso: async () => "uid" + Date.now(),
+    motor: async (acao, d) => {
+      await new Promise(r => setTimeout(r, 500));
+      if (acao === "simular") return { resposta: "(Demonstração) No painel real, a resposta do atendente aparece aqui, usando as informações da aba Meu negócio.", lead: {} };
+      if (acao === "responder") { const c = conversas[d.cid].find(x => x.id === d.numero); c.mensagens.push({ quem: "humano", texto: d.texto, em: new Date().toISOString() }); c.status = "humano"; c.naoLidas = 0; avisa(); }
+      if (acao === "devolver") { const c = conversas[d.cid].find(x => x.id === d.numero); c.status = "atendente"; avisa(); }
+      return { ok: true };
+    }
+  };
+}
+
+/* ═══════════ Estado ═══════════ */
+const st = { user: null, admin: false, clientes: [], cid: null, conversas: [], aberta: null, tab: "conversas", rascunho: null, sim: [], parar: null };
+const cliente = () => st.clientes.find(c => c.id === st.cid);
+
+/* ═══════════ Início ═══════════ */
+(async function(){
+  try { api = DEMO ? apiDemo() : await apiFirebase(); }
+  catch(e){ console.error(e); document.body.insertAdjacentHTML("afterbegin", '<p class="banner">Não foi possível carregar. Verifique a internet e recarregue.</p>'); return; }
+  $("t-demo").classList.toggle("hidden", !DEMO);
+  if (DEMO) { $("l-email").value = "dono@lojaexemplo.com"; $("l-senha").value = "demo123"; $("l-erro").textContent = "Demonstração: entre como está, ou use admin@… para a visão do administrador."; $("l-erro").style.color = "var(--muted)"; }
+  api.onUser(async u => {
+    st.user = u;
+    $("tela-login").classList.toggle("hidden", !!u); $("tela-app").classList.toggle("hidden", !u);
+    if (!u) return;
+    st.admin = await api.ehAdmin(u.uid);
+    document.querySelectorAll(".so-admin").forEach(el => el.classList.toggle("hidden", !st.admin));
+    $("t-tag").textContent = st.admin ? "Administrador" : "Atendente Virtual";
+    api.ouvirClientes(u.uid, st.admin, lista => {
+      st.clientes = lista.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+      if (!st.cid || !cliente()) trocarCliente(st.clientes[0]?.id || null);
+      else { renderTopo(); if (!st.rascunho) preencherFicha(); if (st.tab === "conexao") renderConexao(); if (st.tab === "clientes") renderClientes(); }
+    });
+  });
+})();
+
+$("l-entrar").onclick = async () => {
+  $("l-erro").textContent = "";
+  try { await api.entrar($("l-email").value.trim(), $("l-senha").value); }
+  catch(e){ $("l-erro").style.color = "var(--dang)"; $("l-erro").textContent = "E-mail ou senha incorretos."; }
+};
+$("l-senha").addEventListener("keydown", e => { if (e.key === "Enter") $("l-entrar").click(); });
+$("l-esqueci").onclick = async () => {
+  const e = $("l-email").value.trim(); if (!e) { $("l-erro").textContent = "Digite seu e-mail acima."; return; }
+  try { await api.resetSenha(e); toast("Enviamos um link para criar uma nova senha."); } catch(err){ $("l-erro").textContent = "Não foi possível enviar o e-mail."; }
+};
+$("t-sair").onclick = () => { if (st.parar) st.parar(); api.sair(); };
+
+function trocarCliente(cid){
+  if (st.parar) { st.parar(); st.parar = null; }
+  st.cid = cid; st.aberta = null; st.rascunho = null; st.sim = [];
+  renderTopo();
+  if (!cid) { $("c-lista").innerHTML = '<p class="muted">Nenhum negócio ligado a este acesso ainda.</p>'; $("c-thread").innerHTML = ""; if (st.admin) abrirTab("clientes"); return; }
+  st.parar = api.ouvirConversas(cid, l => { st.conversas = l; renderConversas(); });
+  preencherFicha(); renderSim();
+  abrirTab(st.tab);
+}
+$("t-cliente").onchange = e => trocarCliente(e.target.value);
+
+function renderTopo(){
+  const c = cliente();
+  $("t-nome").textContent = c ? (c.ficha?.loja || c.nome || "Seu negócio") : "Painel";
+  const sel = $("t-cliente");
+  sel.classList.toggle("hidden", st.clientes.length < 2);
+  sel.innerHTML = st.clientes.map(x => `<option value="${esc(x.id)}" ${x.id === st.cid ? "selected" : ""}>${esc(x.nome || x.ficha?.loja || x.id)}</option>`).join("");
+  const modo = c?.ficha?.modo || "plantao";
+  document.querySelectorAll(".modo button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.modo === modo)));
+}
+
+/* Modo do atendente: salva na hora, com histórico */
+document.querySelectorAll(".modo button").forEach(b => b.onclick = async () => {
+  const c = cliente(); if (!c) return;
+  const de = c.ficha?.modo || "plantao", para = b.dataset.modo; if (de === para) return;
+  const ficha = Object.assign({}, c.ficha, { modo: para });
+  try { await api.salvarFicha(c.id, ficha, [{ campo: "modo", de: NOMES_MODO[de], para: NOMES_MODO[para] }], st.user);
+    if (st.rascunho) st.rascunho.modo = para;
+    toast({ sempre: "Atendente ligado: responde todas as mensagens.", plantao: "Plantão: o atendente só responde fora do horário.", desligado: "Atendente desligado." }[para]); }
+  catch(e){ console.error(e); toast("Não foi possível mudar o modo."); }
+});
+
+/* ═══════════ Abas ═══════════ */
+function abrirTab(t){
+  if (!st.admin && ["regras","conexao","clientes"].includes(t)) t = "conversas";
+  st.tab = t;
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t)));
+  document.querySelectorAll("[data-pane]").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t));
+  if (t === "historico") renderHistorico();
+  if (t === "regras") preencherRegras();
+  if (t === "conexao") renderConexao();
+  if (t === "clientes") renderClientes();
+  if (t === "testar") renderSim();
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => abrirTab(b.dataset.tab));
+
+/* ═══════════ Conversas ═══════════ */
+const STATUS = { atendente: ["Atendente", ""], encaminhado: ["Encaminhada para você", "acc"], humano: ["Você está atendendo", "ok"] };
+const TEMP = { quente: "dang", morno: "warn", frio: "" };
+function renderConversas(){
+  const l = st.conversas;
+  $("c-lista").innerHTML = l.length ? l.map(c => {
+    const ult = (c.mensagens || []).at(-1); const [stx, scl] = STATUS[c.status] || STATUS.atendente; const temp = c.lead?.temperatura;
+    return `<button class="item" data-n="${esc(c.id)}" aria-current="${c.id === st.aberta}">
+      <b>${esc(c.nome || c.lead?.nome || "+" + c.numero)}</b>
+      <span class="row" style="gap:6px"><span class="small muted">${quando(c.atualizadoEm)}</span>${c.naoLidas ? `<span class="unread">${c.naoLidas}</span>` : ""}</span>
+      <span class="prev">${ult ? (ult.quem === "cliente" ? "" : ult.quem === "humano" ? "Você: " : "Atendente: ") + esc(ult.texto) : ""}</span>
+      <span class="tags"><span class="badge ${scl}">${stx}</span>${temp && TEMP[temp] !== undefined ? `<span class="badge ${TEMP[temp]}">${esc(temp)}</span>` : ""}</span>
+    </button>`; }).join("") : '<p class="muted" style="padding:10px">Nenhuma conversa ainda. Quando um cliente mandar mensagem no WhatsApp, ela aparece aqui.</p>';
+  $("c-lista").querySelectorAll(".item").forEach(b => b.onclick = () => abrirConversa(b.dataset.n));
+  renderThread();
+}
+function abrirConversa(n){
+  st.aberta = n; document.querySelector(".inbox").classList.add("aberta");
+  const c = st.conversas.find(x => x.id === n);
+  if (c?.naoLidas) api.marcarLida(st.cid, n).catch(() => {});
+  renderConversas();
+}
+function renderThread(){
+  const c = st.conversas.find(x => x.id === st.aberta);
+  if (!c) { $("c-thread").innerHTML = st.conversas.length ? '<div class="panel muted">Escolha uma conversa.</div>' : ""; return; }
+  const [stx, scl] = STATUS[c.status] || STATUS.atendente;
+  const rot = Object.fromEntries([["nome","Nome"],["interesse","Interesse"],["proximo_passo","Próximo passo"],["temperatura","Temperatura"], ...((cliente()?.config?.campos) || [])]);
+  const lead = Object.entries(c.lead || {}).filter(([, v]) => v);
+  const rascunho = $("c-resp")?.value || "";
+  $("c-thread").innerHTML = `
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="row"><button class="linkbtn" id="c-voltar">‹ Voltar</button><h2>${esc(c.nome || "+" + c.numero)}</h2><span class="badge ${scl}">${stx}</span></div>
+        <a class="small" href="https://wa.me/${esc(c.numero)}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">Abrir no WhatsApp</a>
+      </div>
+      ${c.resumo && c.status === "encaminhado" ? `<div class="banner">${esc(c.resumo)}</div>` : ""}
+      <div class="msgs" id="c-msgs">${(c.mensagens || []).map(m => `<div class="b ${esc(m.quem)}">${esc(m.texto)}<small>${m.quem === "atendente" ? "Atendente · " : m.quem === "humano" ? "Você · " : ""}${quando(m.em)}</small></div>`).join("")}</div>
+      <div class="compose"><textarea id="c-resp" placeholder="Responder como ${esc(cliente()?.ficha?.vendedor || "você")}…">${esc(rascunho)}</textarea><button id="c-enviar" class="primary">Enviar</button></div>
+      <div class="row">${c.status !== "atendente" ? '<button id="c-devolver">Devolver para o atendente</button>' : '<span class="hint">Ao responder por aqui, o atendente pausa nesta conversa por 12 horas.</span>'}</div>
+    </div>
+    ${lead.length ? `<div class="panel"><h3>Anotações do atendente</h3><dl class="lead">${lead.map(([k, v]) => `<dt>${esc(rot[k] || k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>` : ""}`;
+  const box = $("c-msgs"); box.scrollTop = box.scrollHeight;
+  $("c-voltar").onclick = () => { st.aberta = null; document.querySelector(".inbox").classList.remove("aberta"); renderConversas(); };
+  $("c-enviar").onclick = async () => {
+    const t = $("c-resp").value.trim(); if (!t) return;
+    $("c-enviar").disabled = true;
+    try { await api.motor("responder", { cid: st.cid, numero: c.id, texto: t }); $("c-resp").value = ""; toast("Mensagem enviada."); renderThread(); }
+    catch(e){ toast(e.message || "Não foi possível enviar."); }
+    finally { if ($("c-enviar")) $("c-enviar").disabled = false; }
+  };
+  const dv = $("c-devolver"); if (dv) dv.onclick = async () => { try { await api.motor("devolver", { cid: st.cid, numero: c.id }); toast("O atendente volta a responder esta conversa."); } catch(e){ toast(e.message); } };
+}
+
+/* ═══════════ Meu negócio ═══════════ */
+function montarGrade(){
+  $("f-grade").innerHTML = DIAS.map(([k, n]) => `<div class="dia" data-dia="${k}">
+    <span>${window.innerWidth<=480?n.slice(0,3):n}</span><label title="Aberto neste dia"><input type="checkbox" class="g-aberto"><span class="txt"> aberto</span></label>
+    <input type="time" class="g-abre" aria-label="${n} abre"><input type="time" class="g-fecha" aria-label="${n} fecha"></div>`).join("");
+  $("f-grade").querySelectorAll("input").forEach(i => i.addEventListener("input", () => { lerFichaDoForm(); }));
+  $("f-grade").querySelectorAll(".g-aberto").forEach(i => i.addEventListener("change", e => {
+    const row = e.target.closest(".dia"); row.querySelectorAll("input[type=time]").forEach(t => t.disabled = !e.target.checked);
+    if (e.target.checked && !row.querySelector(".g-abre").value) { row.querySelector(".g-abre").value = "09:00"; row.querySelector(".g-fecha").value = "18:00"; }
+    lerFichaDoForm();
+  }));
+}
+montarGrade();
+
+function preencherFicha(){
+  const c = cliente(); if (!c) return;
+  const f = c.ficha || {};
+  CAMPOS_FICHA.forEach(k => { $("f-" + k).value = f[k] || ""; });
+  const g = f.grade || GRADE_PADRAO;
+  DIAS.forEach(([k]) => { const row = document.querySelector(`.dia[data-dia="${k}"]`); const d = g[k];
+    row.querySelector(".g-aberto").checked = !!d; row.querySelector(".g-abre").value = d?.abre || ""; row.querySelector(".g-fecha").value = d?.fecha || "";
+    row.querySelectorAll("input[type=time]").forEach(t => t.disabled = !d); });
+  $("f-estoque-aviso").classList.toggle("hidden", !(c.estoque && c.estoque.uid));
+  st.rascunho = null; atualizarStatus();
+}
+function lerFichaDoForm(){
+  const c = cliente(); if (!c) return null;
+  const f = Object.assign({}, c.ficha || {});
+  CAMPOS_FICHA.forEach(k => { f[k] = $("f-" + k).value.trim(); });
+  const g = {};
+  DIAS.forEach(([k]) => { const row = document.querySelector(`.dia[data-dia="${k}"]`);
+    g[k] = row.querySelector(".g-aberto").checked ? { abre: row.querySelector(".g-abre").value || "09:00", fecha: row.querySelector(".g-fecha").value || "18:00" } : null; });
+  f.grade = g;
+  st.rascunho = diferencas(c.ficha || {}, f).length ? f : null;
+  atualizarStatus();
+  return f;
+}
+CAMPOS_FICHA.forEach(k => $("f-" + k).addEventListener("input", lerFichaDoForm));
+
+function textoGrade(g){ return DIAS.map(([k, n]) => n.slice(0, 3) + " " + (g?.[k] ? g[k].abre + "–" + g[k].fecha : "fechado")).join(", "); }
+function diferencas(a, b){
+  const out = [];
+  CAMPOS_FICHA.forEach(k => { if ((a[k] || "") !== (b[k] || "")) out.push({ campo: k, de: a[k] || "", para: b[k] || "" }); });
+  if (JSON.stringify(a.grade || GRADE_PADRAO) !== JSON.stringify(b.grade || GRADE_PADRAO)) out.push({ campo: "grade", de: textoGrade(a.grade || GRADE_PADRAO), para: textoGrade(b.grade), deObj: a.grade || null });
+  return out;
+}
+function atualizarStatus(){
+  const n = st.rascunho ? diferencas(cliente()?.ficha || {}, st.rascunho).length : 0;
+  $("f-status").textContent = n ? `${n} ${n === 1 ? "alteração não salva" : "alterações não salvas"}` : "Tudo salvo";
+  $("f-status").style.color = n ? "var(--warn)" : "";
+  $("f-salvar").disabled = !n; $("f-desfazer").disabled = !n;
+  document.querySelector(".savebar").classList.toggle("hidden", !n);
+}
+$("f-desfazer").onclick = () => preencherFicha();
+$("f-testar").onclick = () => { lerFichaDoForm(); abrirTab("testar"); };
+$("f-salvar").onclick = async () => {
+  const f = lerFichaDoForm(); const c = cliente(); if (!f || !c) return;
+  const mud = diferencas(c.ficha || {}, f).map(({ deObj, ...m }) => m);
+  if (!mud.length) return;
+  $("f-salvar").disabled = true;
+  try { await api.salvarFicha(c.id, f, mud, st.user); st.rascunho = null; toast("Salvo. O atendente já usa as novas informações."); preencherFicha(); }
+  catch(e){ console.error(e); toast("Não foi possível salvar. Tente de novo."); atualizarStatus(); }
+};
+window.addEventListener("beforeunload", e => { if (st.rascunho) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ═══════════ Testar ═══════════ */
+let regrasEmTeste = null;
+function renderSim(){
+  $("s-msgs").innerHTML = st.sim.length ? st.sim.map(m => `<div class="b ${m.quem}">${esc(m.texto)}</div>`).join("")
+    : `<div class="b sys">Mande uma mensagem como se fosse um cliente${st.rascunho ? " (usando as alterações ainda não salvas)" : ""}.</div>`;
+  $("s-msgs").scrollTop = $("s-msgs").scrollHeight;
+  $("s-qual").textContent = regrasEmTeste ? "Testando as regras que você está editando (ainda não salvas)." : "Usa as informações da aba Meu negócio, mesmo as que ainda não foram salvas.";
+}
+function renderLeadSim(lead, passar, resumo){
+  const rot = Object.fromEntries([["nome","Nome"],["interesse","Interesse"],["proximo_passo","Próximo passo"],["temperatura","Temperatura"], ...(((regrasEmTeste || cliente()?.config)?.campos) || [])]);
+  const l = Object.entries(lead || {}).filter(([, v]) => v);
+  $("s-lead").innerHTML = (l.length ? l.map(([k, v]) => `<dt>${esc(rot[k] || k)}</dt><dd>${esc(v)}</dd>`).join("") : '<dt class="muted">Nada ainda</dt><dd></dd>')
+    + (passar ? `<dt>Passar para você</dt><dd><span class="badge acc">Sim</span> ${esc(resumo || "")}</dd>` : "");
+}
+$("s-limpar").onclick = () => { st.sim = []; renderSim(); renderLeadSim({}); };
+$("s-enviar").onclick = async () => {
+  const t = $("s-msg").value.trim(); if (!t || !cliente()) return;
+  $("s-msg").value = ""; st.sim.push({ quem: "cliente", texto: t }); renderSim();
+  $("s-enviar").disabled = true;
+  try {
+    const fechado = document.querySelector('input[name="s-hora"]:checked').value === "fechado";
+    const r = await api.motor("simular", { cid: st.cid, ficha: st.rascunho || cliente().ficha, mensagens: st.sim, forcarFechado: fechado, ...(regrasEmTeste ? { config: regrasEmTeste } : {}) });
+    st.sim.push({ quem: "atendente", texto: r.resposta || "(sem resposta)" });
+    renderLeadSim(r.lead, r.passar_para_vendedor, r.resumo);
+  } catch(e){ st.sim.push({ quem: "sys", texto: e.message || "Não foi possível testar agora." }); }
+  finally { $("s-enviar").disabled = false; renderSim(); }
+};
+$("s-msg").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("s-enviar").click(); } });
+
+/* ═══════════ Histórico ═══════════ */
+async function renderHistorico(){
+  const c = cliente(); if (!c) return;
+  $("h-lista").innerHTML = '<p class="muted">Carregando…</p>';
+  let l = [];
+  try { l = await api.historico(c.id); } catch(e){ $("h-lista").innerHTML = '<p class="muted">Não foi possível carregar.</p>'; return; }
+  const curto = s => s.length > 400 ? s.slice(0, 400) + "…" : s;
+  $("h-lista").innerHTML = l.length ? l.map((h, i) => `<div class="panel" style="padding:12px">
+      <div class="row" style="justify-content:space-between"><span class="small muted">${new Date(h.em).toLocaleString("pt-BR")} · ${esc(h.email || "")}</span>
+        ${(h.mudancas || []).some(m => CAMPOS_FICHA.includes(m.campo)) ? `<button class="linkbtn small" data-i="${i}">Voltar como estava</button>` : ""}</div>
+      ${(h.mudancas || []).map(m => `<div class="mud"><b>${esc(ROTULOS[m.campo] || m.campo)}</b>${m.de ? `<del>${esc(curto(m.de))}</del>` : ""}<ins>${esc(curto(m.para)) || "<i>(vazio)</i>"}</ins></div>`).join("")}
+    </div>`).join("") : '<p class="muted">Nenhuma alteração registrada ainda.</p>';
+  $("h-lista").querySelectorAll("[data-i]").forEach(b => b.onclick = () => {
+    const h = l[Number(b.dataset.i)];
+    (h.mudancas || []).forEach(m => { if (CAMPOS_FICHA.includes(m.campo)) $("f-" + m.campo).value = m.de || ""; });
+    lerFichaDoForm(); abrirTab("negocio"); toast("Valores antigos carregados. Confira e clique em Salvar.");
+  });
+}
+
+/* ═══════════ Admin: regras ═══════════ */
+const opcoesSeg = () => Object.entries(SEGMENTOS).map(([k, s]) => `<option value="${k}">${esc(s.rotulo)}</option>`).join("");
+$("r-seg").innerHTML = opcoesSeg(); $("k-seg").innerHTML = opcoesSeg();
+const CAMPOS_REGRAS = ["descricao","objetivo","tom","coletar","passar","politicas","extrasAdmin"];
+function preencherRegras(cfg){
+  const c = cliente(); if (!c) return;
+  cfg = cfg || c.config || {};
+  CAMPOS_REGRAS.forEach(k => { $("r-" + k).value = cfg[k] || (k === "tom" ? TOM_PADRAO : ""); });
+  $("r-campos").value = (cfg.campos || []).map(([k, r]) => k + " | " + r).join("\n");
+  if (cfg.segmento) $("r-seg").value = cfg.segmento;
+}
+function lerRegras(){
+  const cfg = Object.assign({}, cliente()?.config || {});
+  CAMPOS_REGRAS.forEach(k => { cfg[k] = $("r-" + k).value.trim(); });
+  cfg.campos = $("r-campos").value.split("\n").map(l => l.split("|").map(s => s.trim())).filter(p => p[0])
+    .map(([k, r]) => [k.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\W+/g, "_"), r || k]);
+  cfg.segmento = $("r-seg").value;
+  return cfg;
+}
+$("r-modelo").onclick = () => { preencherRegras(modeloDoSegmento($("r-seg").value).config); toast("Modelo carregado. Ajuste e salve."); };
+$("r-testar").onclick = () => { regrasEmTeste = lerRegras(); st.sim = []; abrirTab("testar"); };
+$("r-salvar").onclick = async () => {
+  try { await api.salvarAdmin(st.cid, { config: lerRegras() }); regrasEmTeste = null; toast("Regras salvas."); } catch(e){ console.error(e); toast("Não foi possível salvar."); }
+};
+
+/* ═══════════ Admin: conexão e uso ═══════════ */
+try { $("x-cotacao").value = localStorage.getItem("cotacao") || "5.50"; } catch(e){ $("x-cotacao").value = "5.50"; }
+$("x-cotacao").addEventListener("input", () => { try { localStorage.setItem("cotacao", $("x-cotacao").value); } catch(e){} renderUso(); });
+function renderConexao(){
+  const c = cliente(); if (!c) return;
+  $("x-nome").value = c.nome || ""; $("x-phone").value = c.phone_number_id || ""; $("x-limite").value = c.limiteMes || 0; $("x-ativo").checked = c.ativo !== false;
+  $("x-est-proj").value = c.estoque?.projeto || ""; $("x-est-uid").value = c.estoque?.uid || "";
+  $("x-membros").textContent = (c.membros || []).length ? (c.membros.length + " acesso(s) criado(s).") : "Nenhum acesso criado ainda.";
+  renderUso();
+}
+function custo(u){ const usd = (u.tokensEntrada || 0) / 1e6 * 1 + (u.tokensSaida || 0) / 1e6 * 5; return usd * Number($("x-cotacao").value || 5.5); }
+const reais = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function renderUso(){
+  const c = cliente(); if (!c) return;
+  const meses = Object.keys(c.uso || {}).sort().reverse().slice(0, 12);
+  $("x-uso").innerHTML = '<tr><th>Mês</th><th class="num">Conversas</th><th class="num">Mensagens</th><th class="num">Respostas da IA</th><th class="num">Custo estimado</th><th class="num">Por conversa</th></tr>' +
+    (meses.length ? meses.map(m => { const u = c.uso[m]; const v = custo(u);
+      return `<tr><td>${m}</td><td class="num">${u.conversas || 0}${c.limiteMes ? " / " + c.limiteMes : ""}</td><td class="num">${u.mensagens || 0}</td><td class="num">${u.respostasIA || 0}</td><td class="num">${reais(v)}</td><td class="num">${u.conversas ? reais(v / u.conversas) : "–"}</td></tr>`; }).join("")
+      : '<tr><td colspan="6" class="muted">Sem uso ainda.</td></tr>');
+}
+$("x-salvar").onclick = async () => {
+  try { await api.salvarAdmin(st.cid, { nome: $("x-nome").value.trim(), phone_number_id: $("x-phone").value.trim(), limiteMes: Number($("x-limite").value || 0), ativo: $("x-ativo").checked }); toast("Conexão salva."); }
+  catch(e){ console.error(e); toast("Não foi possível salvar."); }
+};
+$("x-token-salvar").onclick = async () => {
+  const t = $("x-token").value.trim(); if (!t) return;
+  try { await api.motor("segredo", { cid: st.cid, wa_token: t }); $("x-token").value = ""; toast("Token gravado no servidor."); } catch(e){ toast(e.message); }
+};
+$("x-est-salvar").onclick = async () => {
+  const p = $("x-est-proj").value.trim(), u = $("x-est-uid").value.trim();
+  try { await api.salvarAdmin(st.cid, { estoque: p && u ? { projeto: p, uid: u } : null }); toast(p && u ? "Estoque ligado." : "Estoque desligado."); } catch(e){ toast("Não foi possível salvar."); }
+};
+$("x-novo").onclick = async () => {
+  const e = $("x-novo-email").value.trim(), s = $("x-novo-senha").value;
+  if (!e || s.length < 6) { toast("Informe e-mail e senha com pelo menos 6 caracteres."); return; }
+  try { const uid = await api.criarAcesso(e, s); await api.salvarAdmin(st.cid, { membros: [...(cliente().membros || []), uid] });
+    $("x-novo-email").value = ""; $("x-novo-senha").value = ""; toast("Acesso criado. Envie o e-mail e a senha para o cliente."); }
+  catch(err){ console.error(err); toast(String(err.code || "").includes("email-already") ? "Esse e-mail já tem acesso." : "Não foi possível criar o acesso."); }
+};
+
+/* ═══════════ Admin: clientes ═══════════ */
+function renderClientes(){
+  const m = mesAtual();
+  $("k-lista").innerHTML = '<tr><th>Cliente</th><th>Modo</th><th class="num">Conversas no mês</th><th class="num">Custo no mês</th><th></th></tr>' +
+    (st.clientes.length ? st.clientes.map(c => { const u = c.uso?.[m] || {};
+      return `<tr><td>${esc(c.nome || c.id)} ${c.ativo === false ? '<span class="badge">inativo</span>' : ""} ${!c.phone_number_id ? '<span class="badge warn">sem WhatsApp</span>' : ""}</td>
+        <td>${NOMES_MODO[c.ficha?.modo || "plantao"]}</td><td class="num">${u.conversas || 0}${c.limiteMes ? " / " + c.limiteMes : ""}</td><td class="num">${reais(custo(u))}</td>
+        <td><button class="linkbtn" data-c="${esc(c.id)}">Abrir</button></td></tr>`; }).join("") : '<tr><td colspan="5" class="muted">Nenhum cliente ainda.</td></tr>');
+  $("k-lista").querySelectorAll("[data-c]").forEach(b => b.onclick = () => { trocarCliente(b.dataset.c); abrirTab("conexao"); });
+}
+$("k-criar").onclick = async () => {
+  const nome = $("k-nome").value.trim(); if (!nome) { toast("Dê um nome ao cliente."); return; }
+  const mod = modeloDoSegmento($("k-seg").value); mod.ficha.loja = nome;
+  try { const id = await api.criarCliente({ nome, ativo: true, phone_number_id: "", membros: [], limiteMes: 300, estoque: null, uso: {}, criadoEm: new Date().toISOString(), ...mod });
+    $("k-nome").value = ""; toast("Cliente criado com o modelo do segmento."); trocarCliente(id); abrirTab("conexao"); }
+  catch(e){ console.error(e); toast("Não foi possível criar."); }
+};
+</script>
+</body>
+</html>
