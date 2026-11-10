@@ -114,6 +114,26 @@ table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-weight:600;font-size:12px}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tablewrap{overflow-x:auto}
+/* Passo a passo */
+body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
+#wizard{max-width:720px;width:100%;margin:0 auto;display:grid;gap:14px}
+.wz-prog{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.wz-prog .trilho{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.wz-prog .trilho i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.wz-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.wz-info{grid-template-columns:minmax(0,1fr)}}
+.wz-info div{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px}
+.wz-info b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.wz-ex{font-size:12px;color:var(--muted);background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;white-space:pre-wrap;font-family:var(--mono)}
+.wz-nav{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.wz-erro{color:var(--dang);font-size:13px;margin:0}
+.opcoes{display:grid;gap:8px}
+.opcao{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.opcao:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opcao input{margin-top:3px}
+.opcao span{grid-column:2;font-size:13px;color:var(--muted)}
+.resumo{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+.resumo dt{color:var(--muted)} .resumo dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;z-index:9;max-width:calc(100vw - 32px)}
 </style>
 </head>
@@ -158,6 +178,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <button role="tab" data-tab="clientes" class="adm so-admin">Clientes</button>
     </nav>
 
+    <!-- Passo a passo do cadastro -->
+    <section id="wizard" class="hidden" aria-live="polite"></section>
+
     <!-- Conversas -->
     <section data-pane="conversas" class="inbox">
       <div class="panel lista" id="c-lista"></div>
@@ -166,6 +189,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 
     <!-- Meu negócio -->
     <section data-pane="negocio" style="display:grid;gap:16px">
+      <div class="row" style="justify-content:space-between"><p class="hint">Prefere ir com calma? O passo a passo explica cada informação.</p><button id="f-wizard" class="linkbtn">Abrir o passo a passo</button></div>
       <div class="grid2">
         <div class="panel">
           <h2>Seu negócio</h2>
@@ -182,7 +206,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       </div>
       <div class="panel">
         <h2>Produtos e preços</h2>
-        <p id="f-estoque-aviso" class="banner ok hidden">Os aparelhos em estoque entram sozinhos, direto do seu app de estoque, com o preço de venda cadastrado. Aqui ficam só os itens extras (acessórios, serviços).</p>
         <label class="f"><span>Um por linha: item | preço</span><textarea id="f-catalogo" class="mono"></textarea></label>
       </div>
       <div class="grid2">
@@ -195,6 +218,14 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
           <h2>Promoções e avisos</h2>
           <label class="f"><span>Promoções em vigor</span><textarea id="f-promocoes" placeholder="Ex.: película grátis na compra de qualquer iPhone até 30/11"></textarea></label>
           <label class="f"><span>Outras informações</span><textarea id="f-extras"></textarea></label>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Quem o atendente responde</h2>
+        <p class="hint">Grupos nunca são respondidos. Coloque um número por linha; pode escrever um nome antes, assim: Mãe | (18) 99123-4567</p>
+        <div class="grid2">
+          <label class="f"><span>Não responder estes números (família, amigos, fornecedores)</span><textarea id="f-ignorar" class="mono" style="min-height:110px"></textarea></label>
+          <label class="f"><span>Responder SÓ estes números (deixe vazio para responder todo mundo)</span><textarea id="f-somente" class="mono" style="min-height:110px"></textarea></label>
         </div>
       </div>
       <div class="savebar">
@@ -264,12 +295,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
           <button id="x-token-salvar">Gravar token</button>
         </div>
         <div class="panel">
-          <h2>Estoque integrado (loja de celular)</h2>
-          <p class="hint">Liga o atendente ao app de estoque. Ele lê só nome, status e preço de venda; nunca o custo.</p>
-          <label class="f"><span>Projeto Firebase do app</span><input id="x-est-proj" type="text" placeholder="sistema-importadora-sants"></label>
-          <label class="f"><span>UID do dono no app</span><input id="x-est-uid" type="text"></label>
-          <button id="x-est-salvar">Salvar estoque</button>
-          <hr style="border:none;border-top:1px solid var(--line);width:100%">
           <h2>Acessos ao painel</h2>
           <div id="x-membros" class="small muted"></div>
           <div class="grid2"><input id="x-novo-email" type="email" placeholder="e-mail do cliente"><input id="x-novo-senha" type="text" placeholder="senha inicial (mín. 6)"></div>
@@ -306,7 +331,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 <script type="module">
 /* ═══════════ Configuração (preencha depois de criar o Firebase e implantar o motor) ═══════════ */
 const CONFIG = {
-  firebase: { apiKey: "", authDomain: "", projectId: "", appId: "" },
+  firebase: { apiKey: "AIzaSyBd6i3JLbgpOcOXoppDiDCTkEy_lzcFNUA", authDomain: "atendente-virtual-ca518.firebaseapp.com", projectId: "atendente-virtual-ca518", appId: "1:1035298057029:web:0be5af106b9b793d216c2c" },
   motor: ""   // URL do App da Web do Apps Script (termina em /exec)
 };
 
@@ -471,9 +496,9 @@ const SEGMENTOS = {
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const DIAS = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
-const CAMPOS_FICHA = ["loja","cidade","vendedor","vendedorFone","catalogo","pagamento","atendimento","promocoes","extras"];
-const ROTULOS = { loja:"Nome", cidade:"Cidade", vendedor:"Quem atende", vendedorFone:"WhatsApp de quem atende", catalogo:"Produtos e preços",
-  pagamento:"Pagamento", atendimento:"Entrega/agendamento", promocoes:"Promoções", extras:"Outras informações", grade:"Horário", modo:"Modo do atendente" };
+const CAMPOS_FICHA = ["loja","cidade","vendedor","vendedorFone","catalogo","pagamento","atendimento","promocoes","extras","ignorar","somente"];
+const ROTULOS = { cadastro:"Cadastro", loja:"Nome", cidade:"Cidade", vendedor:"Quem atende", vendedorFone:"WhatsApp de quem atende", catalogo:"Produtos e preços",
+  pagamento:"Pagamento", atendimento:"Entrega/agendamento", ignorar:"Números que o atendente não responde", somente:"Responder só estes números", promocoes:"Promoções", extras:"Outras informações", grade:"Horário", modo:"Modo do atendente" };
 const NOMES_MODO = { sempre:"Sempre", plantao:"Plantão", desligado:"Desligado" };
 const GRADE_PADRAO = { seg:{abre:"09:00",fecha:"18:00"}, ter:{abre:"09:00",fecha:"18:00"}, qua:{abre:"09:00",fecha:"18:00"},
   qui:{abre:"09:00",fecha:"18:00"}, sex:{abre:"09:00",fecha:"18:00"}, sab:{abre:"09:00",fecha:"13:00"}, dom:null };
@@ -487,8 +512,8 @@ function mesAtual(){ const d = new Date(); return d.getFullYear() + "-" + String
 function modeloDoSegmento(k){
   const s = SEGMENTOS[k] || SEGMENTOS.celular;
   return {
-    ficha: { loja: "", cidade: s.cidade || "", vendedor: "", vendedorFone: "", catalogo: s.catalogo || "", pagamento: s.pagamento || "",
-      atendimento: s.atendimento || "", promocoes: "", extras: s.extras || "", grade: GRADE_PADRAO, modo: "plantao" },
+    ficha: { loja: "", cidade: "", vendedor: "", vendedorFone: "", catalogo: "", pagamento: "", atendimento: "", promocoes: "", extras: "",
+      ignorar: "", somente: "", grade: GRADE_PADRAO, modo: "plantao", cadastroConcluido: false },
     config: { segmento: k, descricao: s.descricao, objetivo: s.objetivo, tom: TOM_PADRAO, coletar: s.coletar, passar: s.passar,
       politicas: s.regras || "", campos: s.campos || [], extrasAdmin: "" }
   };
@@ -541,9 +566,10 @@ function apiDemo(){
   const agora = Date.now(), iso = m => new Date(agora - m * 60000).toISOString();
   const base = modeloDoSegmento("celular");
   base.ficha = Object.assign(base.ficha, { loja: "Loja Exemplo iPhones", cidade: "Birigui-SP", vendedor: "Rafael", vendedorFone: "(18) 99999-0000",
-    catalogo: "Capinha MagSafe | R$ 89\nPelícula 3D | R$ 49\nCarregador 20W original | R$ 149", promocoes: "Película grátis na compra de qualquer iPhone" });
+    catalogo: SEGMENTOS.celular.catalogo, pagamento: SEGMENTOS.celular.pagamento, atendimento: SEGMENTOS.celular.atendimento, extras: SEGMENTOS.celular.extras,
+    promocoes: "Película grátis na compra de qualquer iPhone", cadastroConcluido: true });
   const clientes = [{ id: "demo1", nome: "Loja Exemplo iPhones", ativo: true, phone_number_id: "1234567890", membros: ["demo"], limiteMes: 300,
-    estoque: { projeto: "sistema-importadora-sants", uid: "exemplo" }, ...base,
+    ...base,
     uso: { [mesAtual()]: { conversas: 84, mensagens: 512, respostasIA: 430, tokensEntrada: 1250000, tokensSaida: 61000 } } }];
   const conversas = { demo1: [
     { id: "5518911112222", nome: "Maria Souza", numero: "5518911112222", status: "encaminhado", naoLidas: 2, atualizadoEm: iso(4), resumo: "Quer o iPhone 13 azul no Pix, retirada hoje",
@@ -559,15 +585,19 @@ function apiDemo(){
   ] };
   const hist = { demo1: [{ id: "h1", em: iso(1440), email: "dono@lojaexemplo.com", mudancas: [{ campo: "promocoes", de: "", para: "Película grátis na compra de qualquer iPhone" }] }] };
   const ouvintes = { cli: [], conv: {} };
-  const avisa = () => { ouvintes.cli.forEach(f => f(structuredClone(clientes))); Object.entries(ouvintes.conv).forEach(([cid, fs]) => fs.forEach(f => f(structuredClone(conversas[cid] || [])))); };
+  const avisa = () => { ouvintes.cli.forEach(f => f(structuredClone(clientes.filter(c => f.admin || c.membros.includes(f.uid))))); Object.entries(ouvintes.conv).forEach(([cid, fs]) => fs.forEach(f => f(structuredClone(conversas[cid] || [])))); };
   let user = null, onU = () => {};
   return {
     onUser: cb => { onU = cb; setTimeout(() => cb(user), 0); },
-    entrar: async (e) => { user = { uid: e.startsWith("admin") ? "gui" : "demo", email: e }; onU(user); },
+    entrar: async (e) => {
+      user = { uid: e.startsWith("admin") ? "gui" : e.startsWith("novo") ? "novo" : "demo", email: e };
+      if (user.uid === "novo" && !clientes.some(c => c.id === "demoNovo")) { const m = modeloDoSegmento("estetica"); clientes.push({ id: "demoNovo", nome: "Clínica Nova (exemplo)", ativo: true, membros: ["novo"], limiteMes: 300, uso: {}, ...m }); }
+      onU(user);
+    },
     sair: async () => { user = null; onU(null); },
     resetSenha: async () => {},
     ehAdmin: async uid => uid === "gui",
-    ouvirClientes: (uid, admin, cb) => { ouvintes.cli.push(cb); cb(structuredClone(clientes.filter(c => admin || c.membros.includes(uid)))); },
+    ouvirClientes: (uid, admin, cb) => { cb.uid = uid; cb.admin = admin; ouvintes.cli.push(cb); cb(structuredClone(clientes.filter(c => admin || c.membros.includes(uid)))); },
     ouvirConversas: (cid, cb) => { (ouvintes.conv[cid] = ouvintes.conv[cid] || []).push(cb); cb(structuredClone(conversas[cid] || [])); return () => {}; },
     marcarLida: async (cid, n) => { const c = (conversas[cid] || []).find(x => x.id === n); if(c){ c.naoLidas = 0; avisa(); } },
     salvarFicha: async (cid, ficha, mudancas, u) => { clientes.find(c => c.id === cid).ficha = ficha; (hist[cid] = hist[cid] || []).unshift({ id: "h" + Date.now(), em: new Date().toISOString(), email: u.email, mudancas }); avisa(); },
@@ -630,6 +660,8 @@ function trocarCliente(cid){
   st.parar = api.ouvirConversas(cid, l => { st.conversas = l; renderConversas(); });
   preencherFicha(); renderSim();
   abrirTab(st.tab);
+  const f = cliente()?.ficha || {};
+  if (!st.admin && f.cadastroConcluido === false) abrirWizard(0); else if (wz.aberto) fecharWizard();
 }
 $("t-cliente").onchange = e => trocarCliente(e.target.value);
 
@@ -722,38 +754,42 @@ function renderThread(){
 }
 
 /* ═══════════ Meu negócio ═══════════ */
-function montarGrade(){
-  $("f-grade").innerHTML = DIAS.map(([k, n]) => `<div class="dia" data-dia="${k}">
+function montarGrade(box, aoMudar){
+  box.innerHTML = DIAS.map(([k, n]) => `<div class="dia" data-dia="${k}">
     <span>${window.innerWidth<=480?n.slice(0,3):n}</span><label title="Aberto neste dia"><input type="checkbox" class="g-aberto"><span class="txt"> aberto</span></label>
     <input type="time" class="g-abre" aria-label="${n} abre"><input type="time" class="g-fecha" aria-label="${n} fecha"></div>`).join("");
-  $("f-grade").querySelectorAll("input").forEach(i => i.addEventListener("input", () => { lerFichaDoForm(); }));
-  $("f-grade").querySelectorAll(".g-aberto").forEach(i => i.addEventListener("change", e => {
+  box.querySelectorAll("input").forEach(i => i.addEventListener("input", () => aoMudar && aoMudar()));
+  box.querySelectorAll(".g-aberto").forEach(i => i.addEventListener("change", e => {
     const row = e.target.closest(".dia"); row.querySelectorAll("input[type=time]").forEach(t => t.disabled = !e.target.checked);
     if (e.target.checked && !row.querySelector(".g-abre").value) { row.querySelector(".g-abre").value = "09:00"; row.querySelector(".g-fecha").value = "18:00"; }
-    lerFichaDoForm();
+    aoMudar && aoMudar();
   }));
 }
-montarGrade();
+function porGrade(box, g){
+  DIAS.forEach(([k]) => { const row = box.querySelector(`.dia[data-dia="${k}"]`); const d = g[k];
+    row.querySelector(".g-aberto").checked = !!d; row.querySelector(".g-abre").value = d?.abre || ""; row.querySelector(".g-fecha").value = d?.fecha || "";
+    row.querySelectorAll("input[type=time]").forEach(t => t.disabled = !d); });
+}
+function lerGrade(box){
+  const g = {};
+  DIAS.forEach(([k]) => { const row = box.querySelector(`.dia[data-dia="${k}"]`);
+    g[k] = row.querySelector(".g-aberto").checked ? { abre: row.querySelector(".g-abre").value || "09:00", fecha: row.querySelector(".g-fecha").value || "18:00" } : null; });
+  return g;
+}
+montarGrade($("f-grade"), () => lerFichaDoForm());
 
 function preencherFicha(){
   const c = cliente(); if (!c) return;
   const f = c.ficha || {};
   CAMPOS_FICHA.forEach(k => { $("f-" + k).value = f[k] || ""; });
-  const g = f.grade || GRADE_PADRAO;
-  DIAS.forEach(([k]) => { const row = document.querySelector(`.dia[data-dia="${k}"]`); const d = g[k];
-    row.querySelector(".g-aberto").checked = !!d; row.querySelector(".g-abre").value = d?.abre || ""; row.querySelector(".g-fecha").value = d?.fecha || "";
-    row.querySelectorAll("input[type=time]").forEach(t => t.disabled = !d); });
-  $("f-estoque-aviso").classList.toggle("hidden", !(c.estoque && c.estoque.uid));
+  porGrade($("f-grade"), f.grade || GRADE_PADRAO);
   st.rascunho = null; atualizarStatus();
 }
 function lerFichaDoForm(){
   const c = cliente(); if (!c) return null;
   const f = Object.assign({}, c.ficha || {});
   CAMPOS_FICHA.forEach(k => { f[k] = $("f-" + k).value.trim(); });
-  const g = {};
-  DIAS.forEach(([k]) => { const row = document.querySelector(`.dia[data-dia="${k}"]`);
-    g[k] = row.querySelector(".g-aberto").checked ? { abre: row.querySelector(".g-abre").value || "09:00", fecha: row.querySelector(".g-fecha").value || "18:00" } : null; });
-  f.grade = g;
+  f.grade = lerGrade($("f-grade"));
   st.rascunho = diferencas(c.ficha || {}, f).length ? f : null;
   atualizarStatus();
   return f;
@@ -785,6 +821,117 @@ $("f-salvar").onclick = async () => {
   catch(e){ console.error(e); toast("Não foi possível salvar. Tente de novo."); atualizarStatus(); }
 };
 window.addEventListener("beforeunload", e => { if (st.rascunho) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ═══════════ Passo a passo do cadastro ═══════════ */
+const PASSOS = [
+  { id: "inicio", titulo: "Vamos montar o seu atendente",
+    texto: "São 8 passos rápidos, uns 10 minutos. Em cada um eu explico o que é a informação e para que o atendente vai usar. Tudo fica salvo a cada passo e pode ser mudado depois na aba Meu negócio.",
+    campos: () => "" },
+  { id: "negocio", titulo: "Seu negócio", oque: "O nome do seu negócio e a cidade onde fica.",
+    uso: "O atendente se apresenta com esse nome (\"Oi, aqui é da Clínica Bela!\") e usa a cidade quando o cliente pergunta onde fica ou se atende na região dele.",
+    campos: f => campo("loja", "Nome do negócio", "input", f, "Ex.: Clínica Bela Estética") + campo("cidade", "Cidade", "input", f, "Ex.: Araçatuba-SP"),
+    obrig: { loja: "Coloque o nome do negócio." } },
+  { id: "responsavel", titulo: "Quem atende os clientes", oque: "O nome de quem assume a conversa quando o cliente quer fechar, e o WhatsApp dessa pessoa.",
+    uso: "O atendente fala o nome com o cliente (\"a Carla vai confirmar com você\"). No WhatsApp informado, a pessoa recebe um aviso com o resumo quando um cliente está pronto para comprar ou pede para falar com alguém.",
+    campos: f => campo("vendedor", "Nome", "input", f, "Ex.: Carla") + campo("vendedorFone", "WhatsApp para receber os avisos", "tel", f, "(18) 99999-0000"),
+    obrig: { vendedor: "Coloque o nome de quem atende." } },
+  { id: "horario", titulo: "Horário de atendimento", oque: "Os dias e horários em que o negócio está aberto.",
+    uso: "O atendente informa o horário quando perguntam. Fora do horário, ele avisa com simpatia que a equipe retorna no próximo dia útil, mas já adianta tudo. No modo Plantão, é este horário que define quando ele entra.",
+    campos: () => '<div class="grade" id="wz-grade"></div>' },
+  { id: "catalogo", titulo: "Produtos, serviços e preços", oque: "A lista do que você vende, um item por linha, com o preço depois de uma barra: item | preço.",
+    uso: "É a única fonte de preços do atendente: ele nunca inventa valor. Se o cliente pedir algo que não está aqui, ele diz que vai confirmar com você. Pode escrever \"a partir de\" ou \"sob consulta\" quando o preço varia.",
+    campos: f => campo("catalogo", "Lista (item | preço)", "mono", f, "") + exemplo("catalogo"),
+    obrig: { catalogo: "Coloque pelo menos um produto ou serviço." } },
+  { id: "pagamento", titulo: "Pagamento e entrega", oque: "Como o cliente pode pagar e como recebe o produto ou é atendido (entrega, retirada, agendamento, endereço).",
+    uso: "Responde as perguntas mais comuns (\"aceita cartão?\", \"entrega em casa?\") sem precisar de você. Parcelamento com juros fica com você: ele diz que você passa o valor exato.",
+    campos: f => campo("pagamento", "Formas de pagamento", "area", f, "") + exemplo("pagamento") + campo("atendimento", "Entrega, retirada ou agendamento", "area", f, "") + exemplo("atendimento"),
+    obrig: { pagamento: "Diga como o cliente pode pagar." } },
+  { id: "extras", titulo: "Promoções e outras informações", opcional: true, oque: "Promoções que estão valendo agora e qualquer informação útil: garantia, estacionamento, diferenciais.",
+    uso: "O atendente menciona as promoções quando fizer sentido e usa as outras informações para tirar dúvidas. Quando a promoção acabar, é só apagar aqui.",
+    campos: f => campo("promocoes", "Promoções em vigor (opcional)", "area", f, "Ex.: Limpeza de pele com 20% de desconto até 30/11") + campo("extras", "Outras informações (opcional)", "area", f, "") + exemplo("extras") },
+  { id: "contatos", titulo: "Quem o atendente NÃO deve responder", opcional: true, oque: "Números de família, amigos ou fornecedores que falam com você nesse WhatsApp. Um por linha, pode colocar o nome antes: Mãe | (18) 99123-4567.",
+    uso: "O atendente ignora esses números e deixa a conversa só para você. Grupos nunca são respondidos. Se quiser que ele responda apenas algumas pessoas (para testar, por exemplo), use o segundo campo.",
+    campos: f => campo("ignorar", "Não responder (opcional)", "mono", f, "Mãe | (18) 99123-4567") + campo("somente", "Responder SÓ estes (opcional; vazio = todo mundo)", "mono", f, "") },
+  { id: "modo", titulo: "Quando o atendente deve responder", oque: "Escolha como ele trabalha. Dá para trocar a qualquer momento no botão do topo do painel.",
+    uso: "Assim você decide se quer continuar atendendo pessoalmente durante o expediente ou se prefere que ele responda sempre.",
+    campos: f => `<div class="opcoes">${[["sempre","Sempre","Responde todas as mensagens, a qualquer hora. Você assume quando ele avisar."],
+      ["plantao","Plantão","Só responde fora do horário de atendimento. No horário, você responde como sempre."],
+      ["desligado","Desligado por enquanto","Não responde ninguém. Bom para terminar de testar antes de ligar."]]
+      .map(([v, t, d]) => `<label class="opcao"><input type="radio" name="wz-modo" value="${v}" ${(f.modo || "plantao") === v ? "checked" : ""}><b>${t}</b><span>${d}</span></label>`).join("")}</div>` },
+  { id: "fim", titulo: "Confira e conclua", texto: "Revise o que o atendente vai usar. Depois de concluir, teste mandando mensagens como se fosse um cliente.",
+    campos: f => `<dl class="resumo">${[["loja","Nome"],["cidade","Cidade"],["vendedor","Quem atende"],["vendedorFone","WhatsApp dos avisos"]].map(([k, r]) => `<dt>${r}</dt><dd>${esc(f[k] || "—")}</dd>`).join("")}
+      <dt>Horário</dt><dd>${esc(textoGrade(f.grade || GRADE_PADRAO))}</dd>
+      <dt>Produtos</dt><dd>${esc((f.catalogo || "").split("\n").filter(Boolean).length)} itens</dd>
+      <dt>Pagamento</dt><dd>${esc(f.pagamento || "—")}</dd>
+      <dt>Modo</dt><dd>${NOMES_MODO[f.modo || "plantao"]}</dd></dl>` }
+];
+const wz = { i: 0, f: null, aberto: false };
+function exemplo(k){ const s = SEGMENTOS[cliente()?.config?.segmento]; return s && s[k] ? `<div class="wz-ex">Exemplo:\n${esc(s[k])}</div>` : ""; }
+function campo(k, rot, tipo, f, ph){
+  const v = esc(f[k] || "");
+  const el = tipo === "mono" ? `<textarea id="wz-${k}" class="mono" placeholder="${esc(ph)}">${v}</textarea>`
+    : tipo === "area" ? `<textarea id="wz-${k}" placeholder="${esc(ph)}">${v}</textarea>`
+    : `<input id="wz-${k}" type="${tipo === "tel" ? "tel" : "text"}" value="${v}" placeholder="${esc(ph)}">`;
+  return `<label class="f"><span>${rot}</span>${el}</label>`;
+}
+function abrirWizard(inicio){
+  const c = cliente(); if (!c) return;
+  wz.f = Object.assign({ grade: GRADE_PADRAO, modo: "plantao" }, structuredClone(c.ficha || {}));
+  wz.i = inicio || 0; wz.aberto = true;
+  document.body.classList.add("wiz"); $("wizard").classList.remove("hidden");
+  renderWizard();
+}
+function fecharWizard(){ wz.aberto = false; document.body.classList.remove("wiz"); $("wizard").classList.add("hidden"); preencherFicha(); abrirTab(st.tab); }
+function renderWizard(){
+  const p = PASSOS[wz.i], n = PASSOS.length - 1;
+  $("wizard").innerHTML = `<div class="panel">
+    <div class="wz-prog"><span>${wz.i === 0 ? "Começo" : wz.i === n ? "Revisão" : `Passo ${wz.i} de ${n - 1}`}</span><div class="trilho"><i style="width:${Math.round(wz.i / n * 100)}%"></i></div></div>
+    <h1 style="font-size:22px">${p.titulo}</h1>
+    ${p.texto ? `<p class="muted" style="margin:0">${p.texto}</p>` : ""}
+    ${p.oque ? `<div class="wz-info"><div><b>O que é</b>${p.oque}</div><div><b>Para que o atendente usa</b>${p.uso}</div></div>` : ""}
+    <div style="display:grid;gap:10px">${p.campos(wz.f)}</div>
+    <p class="wz-erro" id="wz-erro"></p>
+    <div class="wz-nav">
+      <div>${wz.i ? '<button id="wz-voltar">Voltar</button>' : (cliente()?.ficha?.cadastroConcluido ? '<button id="wz-sair">Sair do passo a passo</button>' : "")}</div>
+      <div class="row">${p.opcional ? '<button id="wz-pular" class="linkbtn">Pular</button>' : ""}
+        <button id="wz-prox" class="primary">${wz.i === 0 ? "Começar" : wz.i === n ? "Concluir e testar" : "Salvar e continuar"}</button></div>
+    </div></div>`;
+  if (p.id === "horario") { montarGrade($("wz-grade")); porGrade($("wz-grade"), wz.f.grade || GRADE_PADRAO); }
+  const foco = $("wizard").querySelector("input:not([type=radio]):not([type=checkbox]),textarea"); if (foco && wz.i) foco.focus();
+  if ($("wz-voltar")) $("wz-voltar").onclick = () => { lerPasso(); wz.i--; renderWizard(); };
+  if ($("wz-sair")) $("wz-sair").onclick = fecharWizard;
+  if ($("wz-pular")) $("wz-pular").onclick = () => { wz.i++; renderWizard(); };
+  $("wz-prox").onclick = avancar;
+  window.scrollTo(0, 0);
+}
+function lerPasso(){
+  $("wizard").querySelectorAll("[id^=wz-]").forEach(el => { const k = el.id.slice(3); if (CAMPOS_FICHA.includes(k)) wz.f[k] = el.value.trim(); });
+  if ($("wz-grade")) wz.f.grade = lerGrade($("wz-grade"));
+  const m = $("wizard").querySelector('input[name="wz-modo"]:checked'); if (m) wz.f.modo = m.value;
+}
+async function avancar(){
+  lerPasso();
+  const p = PASSOS[wz.i], n = PASSOS.length - 1;
+  const falta = Object.entries(p.obrig || {}).find(([k]) => !wz.f[k]);
+  if (falta) { $("wz-erro").textContent = falta[1]; const el = $("wz-" + falta[0]); if (el) el.focus(); return; }
+  if (p.id === "horario" && !Object.values(wz.f.grade).some(Boolean)) { $("wz-erro").textContent = "Marque pelo menos um dia aberto."; return; }
+  const c = cliente(); $("wz-prox").disabled = true;
+  try {
+    if (wz.i === n) {
+      const antes = c.ficha || {};
+      const mud = diferencas(antes, wz.f).map(({ deObj, ...m }) => m);
+      if ((antes.modo || "plantao") !== (wz.f.modo || "plantao")) mud.push({ campo: "modo", de: NOMES_MODO[antes.modo || "plantao"], para: NOMES_MODO[wz.f.modo] });
+      if (!antes.cadastroConcluido) mud.unshift({ campo: "cadastro", de: "", para: "Cadastro inicial concluído pelo passo a passo" });
+      wz.f.cadastroConcluido = true;
+      await api.salvarFicha(c.id, wz.f, mud, st.user);
+      fecharWizard(); st.sim = []; abrirTab("testar"); toast("Pronto! Agora teste como se fosse um cliente.");
+      return;
+    }
+    if (wz.i > 0) await api.salvarAdmin(c.id, { ficha: wz.f, atualizadoEm: new Date().toISOString() });   // guarda o progresso
+    wz.i++; renderWizard();
+  } catch(e){ console.error(e); $("wz-erro").textContent = "Não foi possível salvar. Confira a internet e tente de novo."; $("wz-prox").disabled = false; }
+}
+$("f-wizard").onclick = () => abrirWizard(1);
 
 /* ═══════════ Testar ═══════════ */
 let regrasEmTeste = null;
@@ -865,7 +1012,6 @@ $("x-cotacao").addEventListener("input", () => { try { localStorage.setItem("cot
 function renderConexao(){
   const c = cliente(); if (!c) return;
   $("x-nome").value = c.nome || ""; $("x-phone").value = c.phone_number_id || ""; $("x-limite").value = c.limiteMes || 0; $("x-ativo").checked = c.ativo !== false;
-  $("x-est-proj").value = c.estoque?.projeto || ""; $("x-est-uid").value = c.estoque?.uid || "";
   $("x-membros").textContent = (c.membros || []).length ? (c.membros.length + " acesso(s) criado(s).") : "Nenhum acesso criado ainda.";
   renderUso();
 }
@@ -886,10 +1032,6 @@ $("x-salvar").onclick = async () => {
 $("x-token-salvar").onclick = async () => {
   const t = $("x-token").value.trim(); if (!t) return;
   try { await api.motor("segredo", { cid: st.cid, wa_token: t }); $("x-token").value = ""; toast("Token gravado no servidor."); } catch(e){ toast(e.message); }
-};
-$("x-est-salvar").onclick = async () => {
-  const p = $("x-est-proj").value.trim(), u = $("x-est-uid").value.trim();
-  try { await api.salvarAdmin(st.cid, { estoque: p && u ? { projeto: p, uid: u } : null }); toast(p && u ? "Estoque ligado." : "Estoque desligado."); } catch(e){ toast("Não foi possível salvar."); }
 };
 $("x-novo").onclick = async () => {
   const e = $("x-novo-email").value.trim(), s = $("x-novo-senha").value;
@@ -912,7 +1054,7 @@ function renderClientes(){
 $("k-criar").onclick = async () => {
   const nome = $("k-nome").value.trim(); if (!nome) { toast("Dê um nome ao cliente."); return; }
   const mod = modeloDoSegmento($("k-seg").value); mod.ficha.loja = nome;
-  try { const id = await api.criarCliente({ nome, ativo: true, phone_number_id: "", membros: [], limiteMes: 300, estoque: null, uso: {}, criadoEm: new Date().toISOString(), ...mod });
+  try { const id = await api.criarCliente({ nome, ativo: true, phone_number_id: "", membros: [], limiteMes: 300, uso: {}, criadoEm: new Date().toISOString(), ...mod });
     $("k-nome").value = ""; toast("Cliente criado com o modelo do segmento."); trocarCliente(id); abrirTab("conexao"); }
   catch(e){ console.error(e); toast("Não foi possível criar."); }
 };
