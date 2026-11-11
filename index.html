@@ -189,6 +189,11 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
 
     <!-- Meu negócio -->
     <section data-pane="negocio" style="display:grid;gap:16px">
+      <div class="panel" id="wa-card">
+        <div class="row" style="justify-content:space-between"><h2>WhatsApp</h2><span id="wa-badge" class="badge"></span></div>
+        <p id="wa-status" class="hint"></p>
+        <div class="row"><button id="wa-conectar" class="primary hidden">Conectar meu WhatsApp</button></div>
+      </div>
       <div class="row" style="justify-content:space-between"><p class="hint">Prefere ir com calma? O passo a passo explica cada informação.</p><button id="f-wizard" class="linkbtn">Abrir o passo a passo</button></div>
       <div class="grid2">
         <div class="panel">
@@ -332,6 +337,8 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
 /* ═══════════ Configuração (preencha depois de criar o Firebase e implantar o motor) ═══════════ */
 const CONFIG = {
   firebase: { apiKey: "AIzaSyBd6i3JLbgpOcOXoppDiDCTkEy_lzcFNUA", authDomain: "atendente-virtual-ca518.firebaseapp.com", projectId: "atendente-virtual-ca518", appId: "1:1035298057029:web:0be5af106b9b793d216c2c" },
+  // App do Meta para o botão "Conectar WhatsApp" (preencher depois da aprovação como Parceiro de Tecnologia)
+  meta: { appId: "", configId: "", versao: "v23.0", extras: { setup: {}, sessionInfoVersion: "3" } },
   motor: "https://script.google.com/macros/s/AKfycbxBrlPGJ3M8t-cSM3TaPazINpCjdoysJmNHDSozdKYqlv0fbZxERSfEJvYjoRNWldvg/exec"
 };
 
@@ -635,7 +642,7 @@ const cliente = () => st.clientes.find(c => c.id === st.cid);
     api.ouvirClientes(u.uid, st.admin, lista => {
       st.clientes = lista.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
       if (!st.cid || !cliente()) trocarCliente(st.clientes[0]?.id || null);
-      else { renderTopo(); if (!st.rascunho) preencherFicha(); if (st.tab === "conexao") renderConexao(); if (st.tab === "clientes") renderClientes(); }
+      else { renderTopo(); if (!st.rascunho) preencherFicha(); renderWhats(); if (st.tab === "conexao") renderConexao(); if (st.tab === "clientes") renderClientes(); }
     });
   });
 })();
@@ -783,7 +790,7 @@ function preencherFicha(){
   const f = c.ficha || {};
   CAMPOS_FICHA.forEach(k => { $("f-" + k).value = f[k] || ""; });
   porGrade($("f-grade"), f.grade || GRADE_PADRAO);
-  st.rascunho = null; atualizarStatus();
+  st.rascunho = null; atualizarStatus(); renderWhats();
 }
 function lerFichaDoForm(){
   const c = cliente(); if (!c) return null;
@@ -821,6 +828,55 @@ $("f-salvar").onclick = async () => {
   catch(e){ console.error(e); toast("Não foi possível salvar. Tente de novo."); atualizarStatus(); }
 };
 window.addEventListener("beforeunload", e => { if (st.rascunho) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ═══════════ Conectar WhatsApp (Embedded Signup do Meta) ═══════════ */
+function renderWhats(){
+  const c = cliente(); if (!c) return;
+  const ligado = !!c.phone_number_id, liberado = !!(CONFIG.meta.appId && CONFIG.meta.configId) || DEMO;
+  $("wa-badge").className = "badge " + (ligado ? "ok" : "warn");
+  $("wa-badge").textContent = ligado ? "Conectado" : "Não conectado";
+  $("wa-status").textContent = ligado
+    ? `Número ${c.whatsapp || c.phone_number_id} ligado ao atendente${c.conectadoEm ? " desde " + new Date(c.conectadoEm).toLocaleDateString("pt-BR") : ""}.` + (c.coexistencia ? " Você continua usando o app WhatsApp Business normalmente; quando responder por ele, o atendente pausa naquela conversa." : "")
+    : liberado ? "Clique no botão, entre com o Facebook da empresa, escolha o número e autorize. Se esse número já usa o app WhatsApp Business, ele continua funcionando no celular e o atendente responde junto."
+    : "A conexão do seu número é feita junto com a gente na implantação.";
+  $("wa-conectar").classList.toggle("hidden", !liberado);
+  $("wa-conectar").textContent = ligado ? "Trocar o número" : "Conectar meu WhatsApp";
+}
+let sdkMeta = null;
+function carregarSdkMeta(){
+  if (sdkMeta) return sdkMeta;
+  sdkMeta = new Promise((ok, falha) => {
+    window.fbAsyncInit = () => { FB.init({ appId: CONFIG.meta.appId, autoLogAppEvents: true, xfbml: true, version: CONFIG.meta.versao }); ok(); };
+    const sc = document.createElement("script"); sc.async = true; sc.defer = true; sc.crossOrigin = "anonymous";
+    sc.src = "https://connect.facebook.net/pt_BR/sdk.js"; sc.onerror = () => { sdkMeta = null; falha(new Error("Não foi possível abrir o Facebook. Confira a internet ou o bloqueador de anúncios.")); };
+    document.head.appendChild(sc);
+  });
+  return sdkMeta;
+}
+let sessaoMeta = null;
+window.addEventListener("message", ev => {
+  if (!String(ev.origin).endsWith("facebook.com")) return;
+  try { const d = JSON.parse(ev.data); if (d.type === "WA_EMBEDDED_SIGNUP") sessaoMeta = d; } catch(e) {}
+});
+async function conectarWhatsApp(){
+  const c = cliente(); if (!c) return;
+  const b = $("wa-conectar"); b.disabled = true;
+  try {
+    if (DEMO) { await new Promise(r => setTimeout(r, 600)); await api.salvarAdmin(c.id, { phone_number_id: "999", whatsapp: "+55 18 99999-0000", coexistencia: true, conectadoEm: new Date().toISOString() }); toast("WhatsApp conectado (demonstração)."); return; }
+    await carregarSdkMeta(); sessaoMeta = null;
+    const resp = await new Promise(ok => FB.login(ok, { config_id: CONFIG.meta.configId, response_type: "code", override_default_response_type: true, extras: CONFIG.meta.extras }));
+    const code = resp && resp.authResponse && resp.authResponse.code;
+    for (let i = 0; i < 30 && !sessaoMeta; i++) await new Promise(r => setTimeout(r, 100));
+    if (!code || (sessaoMeta && sessaoMeta.event === "CANCEL")) { toast("Conexão cancelada."); return; }
+    const d = (sessaoMeta && sessaoMeta.data) || {};
+    if (!d.waba_id) { toast("O Meta não devolveu a conta do WhatsApp. Tente de novo."); return; }
+    const r = await api.motor("conectarWhatsApp", { cid: c.id, code, waba_id: d.waba_id, phone_number_id: d.phone_number_id || "",
+      coexistencia: /BUSINESS_APP/.test(sessaoMeta.event || "") });
+    toast("WhatsApp " + (r.numero || "") + " conectado!");
+  } catch(e) { console.error(e); toast(e.message || "Não foi possível conectar."); }
+  finally { b.disabled = false; }
+}
+$("wa-conectar").onclick = conectarWhatsApp;
 
 /* ═══════════ Passo a passo do cadastro ═══════════ */
 const PASSOS = [
