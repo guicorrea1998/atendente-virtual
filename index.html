@@ -516,13 +516,15 @@ function quando(iso){ if(!iso) return ""; const d = new Date(iso); const hoje = 
   return d.toDateString() === hoje.toDateString() ? d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) + " " + d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
 function mesAtual(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); }
 
+const pares = l => (l || []).map(x => Array.isArray(x) ? x : [x.chave, x.rotulo]);
+const objetos = l => pares(l).map(([chave, rotulo]) => ({ chave, rotulo }));
 function modeloDoSegmento(k){
   const s = SEGMENTOS[k] || SEGMENTOS.celular;
   return {
     ficha: { loja: "", cidade: "", vendedor: "", vendedorFone: "", catalogo: "", pagamento: "", atendimento: "", promocoes: "", extras: "",
       ignorar: "", somente: "", grade: GRADE_PADRAO, modo: "plantao", cadastroConcluido: false },
     config: { segmento: k, descricao: s.descricao, objetivo: s.objetivo, tom: TOM_PADRAO, coletar: s.coletar, passar: s.passar,
-      politicas: s.regras || "", campos: s.campos || [], extrasAdmin: "" }
+      politicas: s.regras || "", campos: objetos(s.campos), extrasAdmin: "" }
   };
 }
 
@@ -733,7 +735,7 @@ function renderThread(){
   const c = st.conversas.find(x => x.id === st.aberta);
   if (!c) { $("c-thread").innerHTML = st.conversas.length ? '<div class="panel muted">Escolha uma conversa.</div>' : ""; return; }
   const [stx, scl] = STATUS[c.status] || STATUS.atendente;
-  const rot = Object.fromEntries([["nome","Nome"],["interesse","Interesse"],["proximo_passo","Próximo passo"],["temperatura","Temperatura"], ...((cliente()?.config?.campos) || [])]);
+  const rot = Object.fromEntries([["nome","Nome"],["interesse","Interesse"],["proximo_passo","Próximo passo"],["temperatura","Temperatura"], ...pares(cliente()?.config?.campos)]);
   const lead = Object.entries(c.lead || {}).filter(([, v]) => v);
   const rascunho = $("c-resp")?.value || "";
   $("c-thread").innerHTML = `
@@ -998,7 +1000,7 @@ function renderSim(){
   $("s-qual").textContent = regrasEmTeste ? "Testando as regras que você está editando (ainda não salvas)." : "Usa as informações da aba Meu negócio, mesmo as que ainda não foram salvas.";
 }
 function renderLeadSim(lead, passar, resumo){
-  const rot = Object.fromEntries([["nome","Nome"],["interesse","Interesse"],["proximo_passo","Próximo passo"],["temperatura","Temperatura"], ...(((regrasEmTeste || cliente()?.config)?.campos) || [])]);
+  const rot = Object.fromEntries([["nome","Nome"],["interesse","Interesse"],["proximo_passo","Próximo passo"],["temperatura","Temperatura"], ...pares((regrasEmTeste || cliente()?.config)?.campos)]);
   const l = Object.entries(lead || {}).filter(([, v]) => v);
   $("s-lead").innerHTML = (l.length ? l.map(([k, v]) => `<dt>${esc(rot[k] || k)}</dt><dd>${esc(v)}</dd>`).join("") : '<dt class="muted">Nada ainda</dt><dd></dd>')
     + (passar ? `<dt>Passar para você</dt><dd><span class="badge acc">Sim</span> ${esc(resumo || "")}</dd>` : "");
@@ -1045,14 +1047,14 @@ function preencherRegras(cfg){
   const c = cliente(); if (!c) return;
   cfg = cfg || c.config || {};
   CAMPOS_REGRAS.forEach(k => { $("r-" + k).value = cfg[k] || (k === "tom" ? TOM_PADRAO : ""); });
-  $("r-campos").value = (cfg.campos || []).map(([k, r]) => k + " | " + r).join("\n");
+  $("r-campos").value = pares(cfg.campos).map(([k, r]) => k + " | " + r).join("\n");
   if (cfg.segmento) $("r-seg").value = cfg.segmento;
 }
 function lerRegras(){
   const cfg = Object.assign({}, cliente()?.config || {});
   CAMPOS_REGRAS.forEach(k => { cfg[k] = $("r-" + k).value.trim(); });
   cfg.campos = $("r-campos").value.split("\n").map(l => l.split("|").map(s => s.trim())).filter(p => p[0])
-    .map(([k, r]) => [k.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\W+/g, "_"), r || k]);
+    .map(([k, r]) => ({ chave: k.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\W+/g, "_"), rotulo: r || k }));
   cfg.segmento = $("r-seg").value;
   return cfg;
 }
