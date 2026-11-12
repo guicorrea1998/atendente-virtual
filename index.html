@@ -226,6 +226,14 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
         </div>
       </div>
       <div class="panel">
+        <h2>Como você costuma responder</h2>
+        <p class="hint">O atendente usa estas respostas no lugar das genéricas e imita o seu jeito de escrever. Preços e condições valem sempre os da lista acima. Antes de colar uma conversa, apague nome e telefone do cliente.</p>
+        <div class="grid2">
+          <label class="f"><span>Perguntas frequentes e a sua resposta (P: … / R: …)</span><textarea id="f-faq" style="min-height:130px" placeholder="P: Atende homem?&#10;R: Atendemos sim!"></textarea></label>
+          <label class="f"><span>Exemplo de conversa real (opcional)</span><textarea id="f-jeito" style="min-height:130px" placeholder="Cliente: oi, quanto tá?&#10;Nós: Oi, tudo bem? 😊 …"></textarea></label>
+        </div>
+      </div>
+      <div class="panel">
         <h2>Quem o atendente responde</h2>
         <p class="hint">Grupos nunca são respondidos. Coloque um número por linha; pode escrever um nome antes, assim: Mãe | (18) 99123-4567</p>
         <div class="grid2">
@@ -280,6 +288,7 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
       <label class="f"><span>O que descobrir do cliente</span><textarea id="r-coletar"></textarea></label>
       <label class="f"><span>Quando passar para o responsável</span><textarea id="r-passar"></textarea></label>
       <label class="f"><span>Políticas (garantia, troca, cancelamento)</span><textarea id="r-politicas"></textarea></label>
+      <label class="f"><span>Manual do segmento (perguntas comuns, objeções e o que nunca dizer)</span><textarea id="r-manual" style="min-height:220px"></textarea></label>
       <label class="f"><span>Campos do lead (um por linha: chave | Rótulo)</span><textarea id="r-campos" class="mono" style="min-height:80px"></textarea></label>
       <label class="f"><span>Regra extra de segurança (opcional)</span><textarea id="r-extrasAdmin"></textarea></label>
       <div class="row"><button id="r-testar">Testar com estas regras</button><button id="r-salvar" class="primary">Salvar regras</button></div>
@@ -369,7 +378,29 @@ const SEGMENTOS = {
     coletar: "procedimento de interesse; se é a primeira vez na clínica; melhor dia e período; nome.",
     passar: "preço de procedimentos que exigem avaliação, dúvidas de saúde ou contraindicação (nunca dê orientação de saúde), confirmação do horário na agenda, ou quando já souber procedimento e período.",
     campos: [["primeira_vez","Primeira vez"],["preferencia","Dia/período"],["cidade","Cidade"]],
-    sugestoes: ["Quanto custa limpeza de pele?", "Vocês fazem botox?", "Tem horário sábado?", "Sou gestante, posso fazer peeling?"]
+    faq: "P: Precisa de avaliação?\nR: Para limpeza de pele e drenagem não. Para toxina, peeling e laser sim, e a avaliação é gratuita.\nP: Atende homem?\nR: Atendemos, todos os procedimentos são para homens e mulheres.\nP: Quanto tempo dura a limpeza de pele?\nR: Cerca de 1h30. Dá para voltar à rotina no mesmo dia.",
+    jeito: "Cliente: oi, quanto ta a drenagem?\nNós: Oi, tudo bem? 😊 A sessão de drenagem sai R$ 120, e no pacote de 10 dá para parcelar em até 6x sem juros. Quer que eu veja um horário para você?",
+    manual: `PERGUNTAS COMUNS (responda assim, adaptando à ficha):
+- Quantas sessões preciso? / Em quanto tempo vejo resultado? / Quanto dura o resultado? Varia de pessoa para pessoa e quem define é a profissional na avaliação. Ofereça agendar a avaliação. Nunca dê número de sessões, prazo ou duração por conta própria.
+- Dói? A maioria dos procedimentos causa pouco desconforto e a profissional explica o que esperar antes de começar. Não garanta que "não dói nada".
+- Gestante, amamentando, tomando remédio, com alergia, doença, pele sensível, bronzeada ou após outro procedimento: NÃO diga se pode ou não. Diga que a profissional precisa avaliar o caso e encaminhe (passar_para_vendedor = true).
+- Horário hoje ou no fim de semana: informe o horário de funcionamento, pergunte o dia e o período preferidos e diga que o responsável confirma a agenda.
+- Pacote ou desconto: só os que estão na ficha ou nas promoções. Se não houver, diga que o responsável passa as condições.
+- Fotos de antes e depois: diga que a equipe pode mostrar na avaliação. Nunca envie nem descreva resultados de outros clientes.
+
+OBJEÇÕES:
+- "Tá caro": não dê desconto por conta própria. Lembre o que está incluso (avaliação gratuita, profissionais habilitadas, parcelamento, se estiverem na ficha), ofereça a opção mais em conta do catálogo ou diga que o responsável pode ver condições.
+- "Vou pensar": respeite, sem pressão. Ofereça deixar uma avaliação sem compromisso ou tirar alguma dúvida.
+- "Outro lugar faz mais barato": nunca fale de concorrentes. Destaque os diferenciais da ficha.
+- Medo ou primeira vez: acolha. Explique que a avaliação serve justamente para tirar as dúvidas antes de decidir.
+
+NUNCA:
+- Prometer resultado, usar "garantido", "definitivo", "100%" ou "sem risco".
+- Dizer se um procedimento é indicado ou contraindicado para a pessoa, nem sugerir remédio ou cuidado de saúde.
+- Comentar a aparência do cliente ou sugerir procedimento por causa dela.
+
+TOM: acolhedor, discreto e sem pressão. Trate pelo nome quando souber.`,
+    sugestoes: ["Quanto custa limpeza de pele?", "Quantas sessões de laser preciso?", "Tá caro, vou pensar", "Sou gestante, posso fazer peeling?", "Botox dói? O resultado é garantido?"]
   },
   odonto: {
     rotulo: "Clínica odontológica", descricao: "clínica odontológica",
@@ -503,7 +534,7 @@ const SEGMENTOS = {
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const DIAS = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
-const CAMPOS_FICHA = ["loja","cidade","vendedor","vendedorFone","catalogo","pagamento","atendimento","promocoes","extras","ignorar","somente"];
+const CAMPOS_FICHA = ["loja","cidade","vendedor","vendedorFone","catalogo","pagamento","atendimento","promocoes","extras","faq","jeito","ignorar","somente"];
 const ROTULOS = { cadastro:"Cadastro", loja:"Nome", cidade:"Cidade", vendedor:"Quem atende", vendedorFone:"WhatsApp de quem atende", catalogo:"Produtos e preços",
   pagamento:"Pagamento", atendimento:"Entrega/agendamento", ignorar:"Números que o atendente não responde", somente:"Responder só estes números", promocoes:"Promoções", extras:"Outras informações", grade:"Horário", modo:"Modo do atendente" };
 const NOMES_MODO = { sempre:"Sempre", plantao:"Plantão", desligado:"Desligado" };
@@ -521,10 +552,10 @@ const objetos = l => pares(l).map(([chave, rotulo]) => ({ chave, rotulo }));
 function modeloDoSegmento(k){
   const s = SEGMENTOS[k] || SEGMENTOS.celular;
   return {
-    ficha: { loja: "", cidade: "", vendedor: "", vendedorFone: "", catalogo: "", pagamento: "", atendimento: "", promocoes: "", extras: "",
+    ficha: { loja: "", cidade: "", vendedor: "", vendedorFone: "", catalogo: "", pagamento: "", atendimento: "", promocoes: "", extras: "", faq: "", jeito: "",
       ignorar: "", somente: "", grade: GRADE_PADRAO, modo: "plantao", cadastroConcluido: false },
     config: { segmento: k, descricao: s.descricao, objetivo: s.objetivo, tom: TOM_PADRAO, coletar: s.coletar, passar: s.passar,
-      politicas: s.regras || "", campos: objetos(s.campos), extrasAdmin: "" }
+      politicas: s.regras || "", manual: s.manual || "", campos: objetos(s.campos), extrasAdmin: "" }
   };
 }
 
@@ -883,7 +914,7 @@ $("wa-conectar").onclick = conectarWhatsApp;
 /* ═══════════ Passo a passo do cadastro ═══════════ */
 const PASSOS = [
   { id: "inicio", titulo: "Vamos montar o seu atendente",
-    texto: "São 8 passos rápidos, uns 10 minutos. Em cada um eu explico o que é a informação e para que o atendente vai usar. Tudo fica salvo a cada passo e pode ser mudado depois na aba Meu negócio.",
+    texto: "São 9 passos rápidos, uns 10 minutos. Em cada um eu explico o que é a informação e para que o atendente vai usar. Tudo fica salvo a cada passo e pode ser mudado depois na aba Meu negócio.",
     campos: () => "" },
   { id: "negocio", titulo: "Seu negócio", oque: "O nome do seu negócio e a cidade onde fica.",
     uso: "O atendente se apresenta com esse nome (\"Oi, aqui é da Clínica Bela!\") e usa a cidade quando o cliente pergunta onde fica ou se atende na região dele.",
@@ -907,6 +938,9 @@ const PASSOS = [
   { id: "extras", titulo: "Promoções e outras informações", opcional: true, oque: "Promoções que estão valendo agora e qualquer informação útil: garantia, estacionamento, diferenciais.",
     uso: "O atendente menciona as promoções quando fizer sentido e usa as outras informações para tirar dúvidas. Quando a promoção acabar, é só apagar aqui.",
     campos: f => campo("promocoes", "Promoções em vigor (opcional)", "area", f, "Ex.: Limpeza de pele com 20% de desconto até 30/11") + campo("extras", "Outras informações (opcional)", "area", f, "") + exemplo("extras") },
+  { id: "respostas", titulo: "Como você costuma responder", opcional: true, oque: "As perguntas que seus clientes mais fazem e a resposta que você costuma dar. Se quiser, cole também uma conversa real, para o atendente pegar o seu jeito de escrever.",
+    uso: "O atendente usa as suas respostas no lugar das genéricas e imita o seu estilo (cumprimento, emojis, jeito de oferecer horário). Preços e condições continuam valendo só os da lista de produtos. Antes de colar uma conversa, apague nome e telefone do cliente.",
+    campos: f => campo("faq", "Perguntas e respostas (opcional)", "area", f, "P: Atende homem?\nR: Atendemos sim!") + exemplo("faq") + campo("jeito", "Exemplo de conversa (opcional)", "area", f, "Cliente: oi, quanto tá?\nNós: Oi, tudo bem? …") + exemplo("jeito") },
   { id: "contatos", titulo: "Quem o atendente NÃO deve responder", opcional: true, oque: "Números de família, amigos ou fornecedores que falam com você nesse WhatsApp. Um por linha, pode colocar o nome antes: Mãe | (18) 99123-4567.",
     uso: "O atendente ignora esses números e deixa a conversa só para você. Grupos nunca são respondidos. Se quiser que ele responda apenas algumas pessoas (para testar, por exemplo), use o segundo campo.",
     campos: f => campo("ignorar", "Não responder (opcional)", "mono", f, "Mãe | (18) 99123-4567") + campo("somente", "Responder SÓ estes (opcional; vazio = todo mundo)", "mono", f, "") },
@@ -1042,7 +1076,7 @@ async function renderHistorico(){
 /* ═══════════ Admin: regras ═══════════ */
 const opcoesSeg = () => Object.entries(SEGMENTOS).map(([k, s]) => `<option value="${k}">${esc(s.rotulo)}</option>`).join("");
 $("r-seg").innerHTML = opcoesSeg(); $("k-seg").innerHTML = opcoesSeg();
-const CAMPOS_REGRAS = ["descricao","objetivo","tom","coletar","passar","politicas","extrasAdmin"];
+const CAMPOS_REGRAS = ["descricao","objetivo","tom","coletar","passar","politicas","manual","extrasAdmin"];
 function preencherRegras(cfg){
   const c = cliente(); if (!c) return;
   cfg = cfg || c.config || {};
