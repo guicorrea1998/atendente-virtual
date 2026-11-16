@@ -124,6 +124,13 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
 @media (max-width:560px){.wz-info{grid-template-columns:minmax(0,1fr)}}
 .wz-info div{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px}
 .wz-info b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.mat-lista{display:grid;gap:10px}
+.mat{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}
+.mat-prev{width:64px;height:64px;border-radius:8px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);overflow:hidden}
+.mat-prev img{width:100%;height:100%;object-fit:cover}
+.mat-campos{display:grid;gap:6px}
+.mat-add{display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--accent);color:var(--accent);border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer}
+@media (max-width:480px){.mat{grid-template-columns:48px 1fr}.mat-prev{width:48px;height:48px}.mat .linkbtn{grid-column:2}}
 .wz-ex{font-size:12px;color:var(--muted);background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;white-space:pre-wrap;font-family:var(--mono)}
 .wz-nav{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .wz-erro{color:var(--dang);font-size:13px;margin:0}
@@ -232,6 +239,11 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
           <label class="f"><span>Perguntas frequentes e a sua resposta (P: … / R: …)</span><textarea id="f-faq" style="min-height:130px" placeholder="P: Atende homem?&#10;R: Atendemos sim!"></textarea></label>
           <label class="f"><span>Exemplo de conversa real (opcional)</span><textarea id="f-jeito" style="min-height:130px" placeholder="Cliente: oi, quanto tá?&#10;Nós: Oi, tudo bem? 😊 …"></textarea></label>
         </div>
+      </div>
+      <div class="panel">
+        <h2>Fotos, cardápio e catálogos</h2>
+        <p class="hint">O atendente envia estes arquivos no WhatsApp quando fizer sentido, como o cardápio quando alguém pede. Escreva em "Quando enviar" a situação. Fotos (JPG ou PNG), PDF ou vídeo MP4 de até 16 MB.</p>
+        <div id="f-materiais"></div>
       </div>
       <div class="panel">
         <h2>Quem o atendente responde</h2>
@@ -348,6 +360,8 @@ const CONFIG = {
   firebase: { apiKey: "AIzaSyBd6i3JLbgpOcOXoppDiDCTkEy_lzcFNUA", authDomain: "atendente-virtual-ca518.firebaseapp.com", projectId: "atendente-virtual-ca518", appId: "1:1035298057029:web:0be5af106b9b793d216c2c" },
   // App do Meta para o botão "Conectar WhatsApp" (preencher depois da aprovação como Parceiro de Tecnologia)
   meta: { appId: "", configId: "", versao: "v23.0", extras: { setup: {}, sessionInfoVersion: "3" } },
+  // Fotos e arquivos que o atendente envia (Cloudinary, preset do tipo "unsigned")
+  cloudinary: { cloud: "esing0no", preset: "atendente" },
   motor: "https://script.google.com/macros/s/AKfycbxBrlPGJ3M8t-cSM3TaPazINpCjdoysJmNHDSozdKYqlv0fbZxERSfEJvYjoRNWldvg/exec"
 };
 
@@ -383,6 +397,7 @@ NUNCA:
 - Dizer que é lacrado ou novo se a ficha diz seminovo.
 
 TOM: direto e animado, como vendedor de loja. Frases curtas.`,
+    materiaisEx: "Fotos do iPhone 13 Azul → quando perguntarem do iPhone 13\nTabela de preços (PDF) → quando pedirem a lista de aparelhos",
     sugestoes: ["Oi, tem iPhone 13?", "Quanto fica o 15 Pro em 12x?", "Aceita meu 11 na troca?", "Faz por 3.200 à vista?"]
   },
   estetica: {
@@ -419,6 +434,7 @@ NUNCA:
 - Comentar a aparência do cliente ou sugerir procedimento por causa dela.
 
 TOM: acolhedor, discreto e sem pressão. Trate pelo nome quando souber.`,
+    materiaisEx: "Tabela de procedimentos (PDF) → quando pedirem os valores\nFotos do espaço → quando perguntarem como é a clínica",
     sugestoes: ["Quanto custa limpeza de pele?", "Quantas sessões de laser preciso?", "Tá caro, vou pensar", "Sou gestante, posso fazer peeling?", "Botox dói? O resultado é garantido?"]
   },
   odonto: {
@@ -453,6 +469,7 @@ NUNCA:
 - Prometer resultado de clareamento, aparelho ou implante.
 
 TOM: acolhedor e calmo.`,
+    materiaisEx: "Tabela de tratamentos (foto) → quando pedirem os valores\nLocalização da clínica (foto) → quando perguntarem onde fica",
     sugestoes: ["Quanto é o clareamento?", "Aceita convênio?", "Estou com dor de dente", "Tem avaliação para aparelho?"]
   },
   salao: {
@@ -484,6 +501,7 @@ NUNCA:
 - Opinar sobre a aparência do cliente.
 
 TOM: descontraído e simpático.`,
+    materiaisEx: "Tabela de serviços (foto) → quando perguntarem os preços\nFotos de cortes → quando pedirem exemplos de trabalho",
     sugestoes: ["Tem horário hoje à tarde?", "Quanto é corte e barba?", "Quero fazer luzes", "Abre segunda?"]
   },
   petshop: {
@@ -516,6 +534,7 @@ NUNCA:
 - Confirmar horário como marcado.
 
 TOM: carinhoso, fale do pet pelo nome quando souber.`,
+    materiaisEx: "Tabela de banho e tosa (foto) → quando perguntarem o preço do banho\nCatálogo de rações (PDF) → quando pedirem as rações",
     sugestoes: ["Quanto é banho num shih tzu?", "Tem ração premium?", "Vocês buscam o cachorro?", "Meu gato não come, o que faço?"]
   },
   roupas: {
@@ -547,6 +566,7 @@ NUNCA:
 - Opinar sobre o corpo da cliente.
 
 TOM: próximo e animado, como vendedora de loja. Pode elogiar a escolha da peça.`,
+    materiaisEx: "Catálogo da coleção (PDF) → quando pedirem o catálogo ou as novidades\nTabela de medidas (foto) → quando perguntarem o tamanho",
     sugestoes: ["Tem vestido no M?", "Entrega em outra cidade?", "Quanto fica no Pix?", "Posso trocar se não servir?"]
   },
   construcao: {
@@ -576,6 +596,7 @@ NUNCA:
 - Confirmar data de entrega.
 
 TOM: prático e direto. Organize listas com um item por linha.`,
+    materiaisEx: "Tabela de preços (PDF) → quando pedirem a lista de preços\nFotos dos pisos → quando perguntarem dos modelos de piso",
     sugestoes: ["Quanto tá o cimento?", "Preciso de material pra uma laje", "Entrega amanhã?", "Faz preço pra 100 sacos?"]
   },
   delivery: {
@@ -605,6 +626,7 @@ NUNCA:
 - Garantir que um prato não tem alérgeno. Diga que a cozinha confirma.
 
 TOM: rápido e simpático.`,
+    materiaisEx: "Cardápio (foto) → quando pedirem o cardápio ou perguntarem o que tem\nCardápio do dia (foto) → quando perguntarem a carne de hoje",
     sugestoes: ["Qual a carne de hoje?", "Quero 2 marmitex", "Entrega no bairro Aviação?", "Meu pedido está atrasado"]
   },
   imobiliaria: {
@@ -635,6 +657,7 @@ NUNCA:
 - Dar orientação jurídica sobre contrato.
 
 TOM: profissional e cordial.`,
+    materiaisEx: "Fotos da casa do Jd. Exemplo → quando perguntarem dessa casa\nLista de imóveis (PDF) → quando pedirem as opções disponíveis",
     sugestoes: ["Tem casa pra alugar?", "Quero comprar até 300 mil", "Aceita financiamento?", "Posso visitar sábado?"]
   },
   oficina: {
@@ -667,6 +690,7 @@ NUNCA:
 - Confirmar horário como marcado.
 
 TOM: direto e confiável.`,
+    materiaisEx: "Tabela de serviços (foto) → quando perguntarem os preços\nFoto da fachada → quando perguntarem onde fica",
     sugestoes: ["Quanto é troca de óleo no Onix?", "Meu carro tá fazendo barulho", "Tem horário amanhã?", "Vocês buscam o carro?"]
   },
   academia: {
@@ -701,6 +725,7 @@ NUNCA:
 - Indicar dieta, suplemento ou treino.
 
 TOM: motivador, sem exagero.`,
+    materiaisEx: "Grade de aulas (foto) → quando perguntarem os horários das aulas\nTabela de planos (foto) → quando perguntarem a mensalidade",
     sugestoes: ["Quanto é a mensalidade?", "Tem aula experimental?", "Abre domingo?", "Tem plano casal?"]
   },
   outro: {
@@ -730,6 +755,7 @@ NUNCA:
 - Fechar pedido, reservar ou confirmar horário por conta própria.
 
 TOM: simpático e direto.`,
+    materiaisEx: "Catálogo (PDF) → quando pedirem o catálogo\nFotos dos produtos → quando pedirem fotos",
     sugestoes: ["Quanto custa?", "Vocês entregam?", "Faz orçamento?", "Tá caro, vou pensar"]
   }
 };
@@ -739,7 +765,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const DIAS = [["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"],["dom","Domingo"]];
 const CAMPOS_FICHA = ["loja","cidade","vendedor","vendedorFone","catalogo","pagamento","atendimento","promocoes","extras","faq","jeito","ignorar","somente"];
-const ROTULOS = { cadastro:"Cadastro", loja:"Nome", cidade:"Cidade", vendedor:"Quem atende", vendedorFone:"WhatsApp de quem atende", catalogo:"Produtos e preços",
+const ROTULOS = { materiais:"Fotos e arquivos", faq:"Perguntas frequentes", jeito:"Exemplo de conversa", cadastro:"Cadastro", loja:"Nome", cidade:"Cidade", vendedor:"Quem atende", vendedorFone:"WhatsApp de quem atende", catalogo:"Produtos e preços",
   pagamento:"Pagamento", atendimento:"Entrega/agendamento", ignorar:"Números que o atendente não responde", somente:"Responder só estes números", promocoes:"Promoções", extras:"Outras informações", grade:"Horário", modo:"Modo do atendente" };
 const NOMES_MODO = { sempre:"Sempre", plantao:"Plantão", desligado:"Desligado" };
 const GRADE_PADRAO = { seg:{abre:"09:00",fecha:"18:00"}, ter:{abre:"09:00",fecha:"18:00"}, qua:{abre:"09:00",fecha:"18:00"},
@@ -756,7 +782,7 @@ const objetos = l => pares(l).map(([chave, rotulo]) => ({ chave, rotulo }));
 function modeloDoSegmento(k){
   const s = SEGMENTOS[k] || SEGMENTOS.celular;
   return {
-    ficha: { loja: "", cidade: "", vendedor: "", vendedorFone: "", catalogo: "", pagamento: "", atendimento: "", promocoes: "", extras: "", faq: "", jeito: "",
+    ficha: { loja: "", cidade: "", vendedor: "", vendedorFone: "", catalogo: "", pagamento: "", atendimento: "", promocoes: "", extras: "", faq: "", jeito: "", materiais: [],
       ignorar: "", somente: "", grade: GRADE_PADRAO, modo: "plantao", cadastroConcluido: false },
     config: { segmento: k, descricao: s.descricao, objetivo: s.objetivo, tom: TOM_PADRAO, coletar: s.coletar, passar: s.passar,
       politicas: s.regras || "", manual: s.manual || "", campos: objetos(s.campos), extrasAdmin: "" }
@@ -1027,6 +1053,7 @@ function preencherFicha(){
   const f = c.ficha || {};
   CAMPOS_FICHA.forEach(k => { $("f-" + k).value = f[k] || ""; });
   porGrade($("f-grade"), f.grade || GRADE_PADRAO);
+  st.mat = structuredClone(f.materiais || []); uiMateriais($("f-materiais"), st.mat, () => lerFichaDoForm());
   st.rascunho = null; atualizarStatus(); renderWhats();
 }
 function lerFichaDoForm(){
@@ -1034,16 +1061,73 @@ function lerFichaDoForm(){
   const f = Object.assign({}, c.ficha || {});
   CAMPOS_FICHA.forEach(k => { f[k] = $("f-" + k).value.trim(); });
   f.grade = lerGrade($("f-grade"));
+  f.materiais = limparMateriais(st.mat);
   st.rascunho = diferencas(c.ficha || {}, f).length ? f : null;
   atualizarStatus();
   return f;
 }
 CAMPOS_FICHA.forEach(k => $("f-" + k).addEventListener("input", lerFichaDoForm));
 
+/* ── Fotos e arquivos que o atendente envia ── */
+const MAX_MAT = 12;
+const limparMateriais = l => (l || []).filter(m => m && m.url).map(m => ({ id: m.id, nome: String(m.nome || "").trim(), quando: String(m.quando || "").trim(), url: m.url, tipo: m.tipo }));
+const nomesMateriais = l => limparMateriais(l).map(m => m.nome || "(sem nome)").join(", ");
+function tipoArquivo(file){
+  if (/^image\/(jpe?g|png|webp|heic|heif)$/i.test(file.type)) return "image";
+  if (file.type === "application/pdf") return "document";
+  if (file.type === "video/mp4") return "video";
+  return null;
+}
+async function subirArquivo(file){
+  const tipo = tipoArquivo(file);
+  if (!tipo) throw new Error("Formato não aceito. Use foto (JPG ou PNG), PDF ou vídeo MP4.");
+  const lim = { image: 15, document: 20, video: 16 }[tipo];
+  if (file.size > lim * 1024 * 1024) throw new Error(`Arquivo grande demais: o limite é ${lim} MB.`);
+  if (DEMO) return { url: URL.createObjectURL(file), tipo };
+  const fd = new FormData();
+  fd.append("file", file); fd.append("upload_preset", CONFIG.cloudinary.preset); fd.append("folder", "atendente/" + st.cid);
+  const rt = tipo === "image" ? "image" : tipo === "video" ? "video" : "raw";
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CONFIG.cloudinary.cloud}/${rt}/upload`, { method: "POST", body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.secure_url) throw new Error("Não foi possível enviar o arquivo" + (j.error?.message ? ": " + j.error.message : ". Tente de novo."));
+  // fotos: JPG leve (o WhatsApp aceita até 5 MB)
+  const url = tipo === "image" ? j.secure_url.replace("/upload/", "/upload/f_jpg,q_auto,w_1600,c_limit/") : j.secure_url;
+  return { url, tipo };
+}
+function uiMateriais(box, lista, aoMudar){
+  const icone = m => m.tipo === "image" ? `<img src="${esc(m.url)}" alt="">` : m.tipo === "video" ? "VÍDEO" : "PDF";
+  box.innerHTML = `<div class="mat-lista">${lista.map((m, i) => `<div class="mat" data-i="${i}">
+      <div class="mat-prev">${icone(m)}</div>
+      <div class="mat-campos"><input class="mat-nome" type="text" placeholder="Nome (ex.: Cardápio)" value="${esc(m.nome || "")}">
+        <input class="mat-quando" type="text" placeholder="Quando enviar (ex.: quando pedirem o cardápio)" value="${esc(m.quando || "")}"></div>
+      <button class="linkbtn mat-tirar" type="button">Remover</button></div>`).join("")}</div>
+    <div class="row" style="margin-top:10px">${lista.length < MAX_MAT ? `<label class="mat-add"><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4" hidden>+ Adicionar foto ou arquivo</label>` : `<span class="small muted">Limite de ${MAX_MAT} arquivos.</span>`}
+    <span class="small muted mat-msg"></span></div>`;
+  box.querySelectorAll(".mat").forEach(el => {
+    const m = lista[+el.dataset.i];
+    el.querySelector(".mat-nome").addEventListener("input", e => { m.nome = e.target.value; aoMudar && aoMudar(); });
+    el.querySelector(".mat-quando").addEventListener("input", e => { m.quando = e.target.value; aoMudar && aoMudar(); });
+    el.querySelector(".mat-tirar").onclick = () => { lista.splice(+el.dataset.i, 1); uiMateriais(box, lista, aoMudar); aoMudar && aoMudar(); };
+  });
+  const inp = box.querySelector("input[type=file]"); if (!inp) return;
+  inp.onchange = async () => {
+    const file = inp.files[0]; if (!file) return;
+    const msg = box.querySelector(".mat-msg"); msg.style.color = ""; msg.textContent = "Enviando…";
+    try {
+      const { url, tipo } = await subirArquivo(file);
+      lista.push({ id: "m" + Date.now().toString(36), nome: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").slice(0, 60), quando: "", url, tipo });
+      uiMateriais(box, lista, aoMudar); aoMudar && aoMudar();
+      const novo = box.querySelectorAll(".mat-quando"); if (novo.length) novo[novo.length - 1].focus();
+    } catch (e) { msg.style.color = "var(--dang)"; msg.textContent = e.message; }
+  };
+}
+
 function textoGrade(g){ return DIAS.map(([k, n]) => n.slice(0, 3) + " " + (g?.[k] ? g[k].abre + "–" + g[k].fecha : "fechado")).join(", "); }
 function diferencas(a, b){
   const out = [];
   CAMPOS_FICHA.forEach(k => { if ((a[k] || "") !== (b[k] || "")) out.push({ campo: k, de: a[k] || "", para: b[k] || "" }); });
+  if (JSON.stringify(limparMateriais(a.materiais)) !== JSON.stringify(limparMateriais(b.materiais)))
+    out.push({ campo: "materiais", de: nomesMateriais(a.materiais), para: nomesMateriais(b.materiais) });
   if (JSON.stringify(a.grade || GRADE_PADRAO) !== JSON.stringify(b.grade || GRADE_PADRAO)) out.push({ campo: "grade", de: textoGrade(a.grade || GRADE_PADRAO), para: textoGrade(b.grade), deObj: a.grade || null });
   return out;
 }
@@ -1118,7 +1202,7 @@ $("wa-conectar").onclick = conectarWhatsApp;
 /* ═══════════ Passo a passo do cadastro ═══════════ */
 const PASSOS = [
   { id: "inicio", titulo: "Vamos montar o seu atendente",
-    texto: "São 9 passos rápidos, uns 10 minutos. Em cada um eu explico o que é a informação e para que o atendente vai usar. Tudo fica salvo a cada passo e pode ser mudado depois na aba Meu negócio.",
+    texto: "São 10 passos rápidos, uns 10 minutos. Em cada um eu explico o que é a informação e para que o atendente vai usar. Tudo fica salvo a cada passo e pode ser mudado depois na aba Meu negócio.",
     campos: () => "" },
   { id: "negocio", titulo: "Seu negócio", oque: "O nome do seu negócio e a cidade onde fica.",
     uso: "O atendente se apresenta com esse nome (\"Oi, aqui é da Clínica Bela!\") e usa a cidade quando o cliente pergunta onde fica ou se atende na região dele.",
@@ -1145,6 +1229,9 @@ const PASSOS = [
   { id: "respostas", titulo: "Como você costuma responder", opcional: true, oque: "As perguntas que seus clientes mais fazem e a resposta que você costuma dar. Se quiser, cole também uma conversa real, para o atendente pegar o seu jeito de escrever.",
     uso: "O atendente usa as suas respostas no lugar das genéricas e imita o seu estilo (cumprimento, emojis, jeito de oferecer horário). Preços e condições continuam valendo só os da lista de produtos. Antes de colar uma conversa, apague nome e telefone do cliente.",
     campos: f => campo("faq", "Perguntas e respostas (opcional)", "area", f, "P: Atende homem?\nR: Atendemos sim!") + exemplo("faq") + campo("jeito", "Exemplo de conversa (opcional)", "area", f, "Cliente: oi, quanto tá?\nNós: Oi, tudo bem? …") + exemplo("jeito") },
+  { id: "materiais", titulo: "Fotos, cardápio e catálogos", opcional: true, oque: "Arquivos que o atendente pode mandar no WhatsApp: cardápio, tabela de preços, catálogo, fotos de produtos ou do espaço. Pode ser foto, PDF ou vídeo curto.",
+    uso: "Quando o cliente pedir ou quando ajudar na conversa, o atendente envia o arquivo certo na hora, sem você precisar procurar no celular. Em \"Quando enviar\" você diz a situação de cada um.",
+    campos: f => '<div id="wz-mat"></div>' + exemplo("materiaisEx") },
   { id: "contatos", titulo: "Quem o atendente NÃO deve responder", opcional: true, oque: "Números de família, amigos ou fornecedores que falam com você nesse WhatsApp. Um por linha, pode colocar o nome antes: Mãe | (18) 99123-4567.",
     uso: "O atendente ignora esses números e deixa a conversa só para você. Grupos nunca são respondidos. Se quiser que ele responda apenas algumas pessoas (para testar, por exemplo), use o segundo campo.",
     campos: f => campo("ignorar", "Não responder (opcional)", "mono", f, "Mãe | (18) 99123-4567") + campo("somente", "Responder SÓ estes (opcional; vazio = todo mundo)", "mono", f, "") },
@@ -1193,6 +1280,7 @@ function renderWizard(){
         <button id="wz-prox" class="primary">${wz.i === 0 ? "Começar" : wz.i === n ? "Concluir e testar" : "Salvar e continuar"}</button></div>
     </div></div>`;
   if (p.id === "horario") { montarGrade($("wz-grade")); porGrade($("wz-grade"), wz.f.grade || GRADE_PADRAO); }
+  if (p.id === "materiais") { wz.f.materiais = wz.f.materiais || []; uiMateriais($("wz-mat"), wz.f.materiais); }
   const foco = $("wizard").querySelector("input:not([type=radio]):not([type=checkbox]),textarea"); if (foco && wz.i) foco.focus();
   if ($("wz-voltar")) $("wz-voltar").onclick = () => { lerPasso(); wz.i--; renderWizard(); };
   if ($("wz-sair")) $("wz-sair").onclick = fecharWizard;
@@ -1204,6 +1292,7 @@ function lerPasso(){
   $("wizard").querySelectorAll("[id^=wz-]").forEach(el => { const k = el.id.slice(3); if (CAMPOS_FICHA.includes(k)) wz.f[k] = el.value.trim(); });
   if ($("wz-grade")) wz.f.grade = lerGrade($("wz-grade"));
   const m = $("wizard").querySelector('input[name="wz-modo"]:checked'); if (m) wz.f.modo = m.value;
+  if (wz.f.materiais) wz.f.materiais = limparMateriais(wz.f.materiais);
 }
 async function avancar(){
   lerPasso();
@@ -1250,8 +1339,9 @@ $("s-enviar").onclick = async () => {
   $("s-enviar").disabled = true;
   try {
     const fechado = document.querySelector('input[name="s-hora"]:checked').value === "fechado";
-    const r = await api.motor("simular", { cid: st.cid, ficha: st.rascunho || cliente().ficha, mensagens: st.sim, forcarFechado: fechado, ...(regrasEmTeste ? { config: regrasEmTeste } : {}) });
+    const r = await api.motor("simular", { cid: st.cid, ficha: st.rascunho || cliente().ficha, mensagens: st.sim.filter(m => m.quem !== "sys"), forcarFechado: fechado, ...(regrasEmTeste ? { config: regrasEmTeste } : {}) });
     st.sim.push({ quem: "atendente", texto: r.resposta || "(sem resposta)" });
+    if (r.enviar && r.enviar.length) st.sim.push({ quem: "sys", texto: "Aqui o atendente enviaria: " + r.enviar.join(", ") });
     renderLeadSim(r.lead, r.passar_para_vendedor, r.resumo);
   } catch(e){ st.sim.push({ quem: "sys", texto: e.message || "Não foi possível testar agora." }); }
   finally { $("s-enviar").disabled = false; renderSim(); }
