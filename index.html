@@ -242,7 +242,7 @@ body.wiz .tabs, body.wiz [data-pane], body.wiz .modo{display:none !important}
       </div>
       <div class="panel">
         <h2>Fotos, cardápio e catálogos</h2>
-        <p class="hint">O atendente envia estes arquivos no WhatsApp quando fizer sentido, como o cardápio quando alguém pede. Escreva em "Quando enviar" a situação. Fotos (JPG ou PNG), PDF ou vídeo MP4 de até 16 MB.</p>
+        <p class="hint">O atendente envia estes arquivos no WhatsApp quando fizer sentido, como o cardápio quando alguém pede. Escreva em "Quando enviar" a situação. Fotos (JPG ou PNG) e PDF de até 10 MB, ou vídeo MP4 de até 16 MB.</p>
         <div id="f-materiais"></div>
       </div>
       <div class="panel">
@@ -1081,7 +1081,7 @@ function tipoArquivo(file){
 async function subirArquivo(file){
   const tipo = tipoArquivo(file);
   if (!tipo) throw new Error("Formato não aceito. Use foto (JPG ou PNG), PDF ou vídeo MP4.");
-  const lim = { image: 15, document: 20, video: 16 }[tipo];
+  const lim = { image: 10, document: 10, video: 16 }[tipo];   // limites do plano grátis do Cloudinary (e 16 MB do WhatsApp para vídeo)
   if (file.size > lim * 1024 * 1024) throw new Error(`Arquivo grande demais: o limite é ${lim} MB.`);
   if (DEMO) return { url: URL.createObjectURL(file), tipo };
   const fd = new FormData();
